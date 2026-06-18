@@ -1,0 +1,9 @@
+{
+  "_comment": "Claude Desktop — Penpot MCP via local self-hosted server, bridged with mcp-remote (stdio proxy) to the local SSE endpoint. Requires Node >=22 and the local Penpot MCP services running (4401/sse, plugin ws 4402, manifest 4400). Load the plugin manifest http://localhost:4400/manifest.json in Penpot and click 'Connect to MCP server'. See troubleshooting.md for Private Network Access browser notes.",
+  "mcpServers": {
+    "penpot": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:4401/sse", "--allow-http"]
+    }
+  }
+}

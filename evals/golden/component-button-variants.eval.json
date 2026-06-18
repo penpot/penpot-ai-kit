@@ -1,0 +1,19 @@
+{
+  "id": "component-button-variants",
+  "skill": "penpot-component-factory",
+  "fixture": "fixtures: brief from prompts/component-spec.md for a Button with Hierarchy=Primary and State=Default|Hover|Pressed|Focus|Disabled",
+  "expected": {
+    "must_create": [
+      "a Button component built as a flex Board",
+      "variant components for all five required States",
+      "variant names in Property=Value form (e.g. 'Button, Hierarchy=Primary, State=Hover')",
+      "all fills/spacing bound to tokens"
+    ],
+    "must_not": [
+      "any hardcoded fill/spacing on a variant",
+      "missing State variants",
+      "detach() without approval"
+    ]
+  },
+  "pass_criteria": "validateComponent.js returns pass=true (no missing states, no hardcoded, no naming issues)."
+}

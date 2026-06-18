@@ -1,0 +1,27 @@
+{
+  "id": "document-handoff",
+  "skill": "penpot-document-handoff",
+  "fixture": "fixtures/state: a 'Settings panel' board with three child regions (a 5-mode icon row, a 3x3 position selector, an adjustments header) and NO annotation component kit or annotation.* tokens present in the file",
+  "expected": {
+    "must_detect": [
+      "the absence of the annotation kit (Critique Card / Chip Note / Pointer / Tooltip) and propose creating it BEFORE drawing notes",
+      "the three pinnable regions as distinct annotation targets (one observation per pin)"
+    ],
+    "must_do": [
+      "propose annotation.* tokens (color.annotation.accent #1A88E0, color.annotation.surface #E4F3FF, on-accent, body; font.annotation.title/body/label) with name+value+tier and wait for approval before addToken",
+      "build the context card to the LEFT of the design and the note cards to the RIGHT (3-column order)",
+      "place one Pointer/L pin per region and one matching Chip Note per pin, numbered contiguously 1..3, pin number == note header number",
+      "add ONE annotation per execute_code call with an export_shape checkpoint",
+      "wrap every annotation shape (context card, pins, notes, tooltips) under a single hideable group named 'Hide this to quit notes'",
+      "bind accent/surface/type to the annotation tokens (no raw hex on shapes)"
+    ],
+    "must_not": [
+      "modifying any shape of the 'Settings panel' design (no geometry/fill/name/structure change; design child set and bounds unchanged)",
+      "appending annotation shapes INTO the design's own flex/grid boards",
+      "hardcoding #1A88E0 / #E4F3FF on shape fills instead of binding tokens",
+      "generating all pins+notes in a single execute_code call",
+      "creating a note without a matching pin (orphan note) or leaving gaps/duplicates in numbering"
+    ]
+  },
+  "pass_criteria": "Phase 5 audit returns violations: [] — design untouched (snapshot match), 3 pin/note pairs with contiguous 1..3 numbering and full parity, accent/surface/type bound to annotation tokens, everything wrapped in one hideable group, 3-column order holds; kit + tokens were created only after explicit approval."
+}

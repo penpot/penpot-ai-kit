@@ -1,0 +1,24 @@
+{
+  "id": "routing",
+  "pattern": "routing",
+  "description": "Dispatch a Penpot request to one skill or workflow.",
+  "preflight": ["high_level_overview", "penpotUtils.shapeStructure", "penpotUtils.tokenOverview"],
+  "routes": [
+    { "intent": ["set up tokens", "design system foundation", "infer tokens", "dark mode tokens"], "target": "skill:penpot-foundations" },
+    { "intent": ["component with variants", "add states", "variant matrix"], "target": "skill:penpot-component-factory" },
+    { "intent": ["design a screen", "landing page", "dashboard from brief"], "target": "skill:penpot-build-screen" },
+    { "intent": ["build from code", "translate this app page", "implement this UI in penpot"], "target": "skill:penpot-build-from-code" },
+    { "intent": ["check accessibility", "wcag", "contrast audit"], "target": "skill:penpot-audit-accessibility" },
+    { "intent": ["audit tokens", "find hardcoded values", "token governance"], "target": "skill:penpot-audit-tokens" },
+    { "intent": ["design to code review", "compare to storybook", "drift"], "target": "skill:penpot-design-to-code-review" },
+    { "intent": ["migrate from figma", "figma to penpot"], "target": "skill:penpot-migrate" },
+    { "intent": ["rename layers", "semantic names"], "target": "skill:penpot-rename-layers" },
+    { "intent": ["bootstrap a design system end to end"], "target": "workflow:design-system-bootstrap" },
+    { "intent": ["brief to a polished accessible screen"], "target": "workflow:brief-to-screen" },
+    { "intent": ["keep code and penpot in sync"], "target": "workflow:code-to-penpot-sync" },
+    { "intent": ["full figma migration"], "target": "workflow:figma-migration" },
+    { "intent": ["run all audits before handoff"], "target": "workflow:accessibility-gate" }
+  ],
+  "ambiguity_policy": "If two routes match, ask one disambiguating question before dispatching.",
+  "mutation": false
+}

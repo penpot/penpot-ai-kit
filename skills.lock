@@ -1,0 +1,18 @@
+{
+  "lockfileVersion": 1,
+  "integrity": "pending",
+  "note": "Content hashes require a tooling/CI pass (e.g. SHA-256 over each SKILL.md + resources). Not computed here because the kit is authored as content only (no git/build step). Populate 'integrity' and per-skill 'hash' fields in a later tooling pass.",
+  "skills": {
+    "penpot-router": "0.1.0",
+    "penpot-foundations": "0.1.0",
+    "penpot-component-factory": "0.1.0",
+    "penpot-build-screen": "0.1.0",
+    "penpot-build-from-code": "0.1.0",
+    "penpot-document-handoff": "0.1.0",
+    "penpot-audit-accessibility": "0.1.0",
+    "penpot-audit-tokens": "0.1.0",
+    "penpot-design-to-code-review": "0.1.0",
+    "penpot-migrate": "0.1.0",
+    "penpot-rename-layers": "0.1.0"
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://penpot.app/ai/shared/tokens-schema.json",
+  "title": "Penpot Design Token Schema (W3C DTCG-aligned)",
+  "description": "Canonical taxonomy and naming rules for design tokens in this kit. Aligned with the W3C Design Tokens Community Group format, mapped to the REAL Penpot token types accepted by penpot.library.local.tokens.set.addToken({type,name,value}). Skills MUST reference this file rather than hardcoding token type strings.",
+  "penpotTokenTypes": {
+    "description": "The exact `type` strings the real Penpot Plugin API accepts in addToken({type,...}). Use these spellings verbatim — note camelCase / plural forms.",
+    "enum": [
+      "color",
+      "dimension",
+      "spacing",
+      "typography",
+      "shadow",
+      "opacity",
+      "borderRadius",
+      "borderWidth",
+      "fontWeights",
+      "fontSizes",
+      "fontFamilies",
+      "letterSpacing",
+      "textDecoration",
+      "textCase"
+    ]
+  },
+  "namingConvention": {
+    "format": "dot.separated.lowercase",
+    "description": "W3C DTCG dot-notation. Tiers: primitive (raw scale) -> semantic (intent) -> component (optional).",
+    "examples": {
+      "primitive": ["color.blue.500", "spacing.4", "radius.md", "font.size.300"],
+      "semantic": ["color.action.primary.bg", "color.text.default", "spacing.inset.md", "radius.control"],
+      "component": ["button.primary.bg", "input.border.default"]
+    },
+    "references": {
+      "syntax": "A token value may reference another token with curly braces: \"{color.blue.500}\".",
+      "example": { "name": "color.action.primary.bg", "type": "color", "value": "{color.blue.500}" }
+    }
+  },
+  "tiers": [
+    {
+      "tier": "primitive",
+      "purpose": "Raw, context-free scale values. Never used directly on shapes when a semantic token exists.",
+      "tokenSet": "primitives"
+    },
+    {
+      "tier": "semantic",
+      "purpose": "Intent-bearing aliases that reference primitives. THIS is what shapes should bind to.",
+      "tokenSet": "semantic (mode-invariant: spacing/radius/type) + modes/light & modes/dark (colour semantics; same names in both sets). See shared/modes-and-policies.md."
+    },
+    {
+      "tier": "component",
+      "purpose": "Optional per-component aliases that reference semantic tokens. Create only when a component needs an override surface.",
+      "tokenSet": "components"
+    }
+  ],
+  "scales": {
+    "spacing": {
+      "grid": 4,
+      "description": "All spacing/dimension values MUST be multiples of 4px. Off-grid values are a governance failure.",
+      "recommended": [0, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64]
+    },
+    "radius": { "recommended": [0, 2, 4, 8, 12, 16, 9999] },
+    "typeScale": {
+      "ratio": 1.2,
+      "ratioName": "Minor Third",
+      "description": "Type sizes follow a Minor Third (1.2) scale unless the brand dictates otherwise."
+    }
+  },
+  "themes": {
+    "description": "Themes (e.g. light/dark/high-contrast) are modeled as two mutually-exclusive colour sets in a modes/ group (modes/light active by default, modes/dark inactive) holding the SAME token names. Primitives and the mode-invariant semantic set stay constant; bindings re-resolve by name when the active modes/* set switches. See shared/modes-and-policies.md.",
+    "modeled_as": "penpot.library.local.tokens.themes via addTheme({ group, name }) (object arg); each theme toggles the matching modes/* set."
+  },
+  "governanceRules": {
+    "noHardcodedColor": "No raw hex/rgb/hsl on shape fills/strokes when a matching semantic color token exists.",
+    "noOffGridSpacing": "No spacing/padding/gap that is not a multiple of the 4px grid token scale.",
+    "noOrphanTokens": "Every token should resolve and (for semantic/component tiers) reference a valid lower-tier token.",
+    "preferSemantic": "Bind shapes to semantic tokens, not primitives, so theming works."
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "foundations-basic",
+  "skill": "penpot-foundations",
+  "fixture": "inline: 'Set up a token foundation with a blue brand color, a neutral gray ramp, a 4px spacing scale, and one semantic alias color.action.primary.bg.'",
+  "expected": {
+    "must_create": [
+      "token set 'primitives' with at least one color and one spacing token",
+      "token set 'semantic' with color.action.primary.bg referencing a primitive",
+      "all spacing tokens are multiples of 4"
+    ],
+    "must_not": [
+      "shapes bound directly to primitive color tokens",
+      "any token created without a checkpoint/approval",
+      "use of hyphenated token types like 'border-radius'"
+    ]
+  },
+  "pass_criteria": "tokenOverview() shows primitives + semantic; semantic alias resolves to the primitive value; validateTokens.js reports 0 off-grid and 0 unresolved."
+}

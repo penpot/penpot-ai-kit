@@ -1,0 +1,32 @@
+{
+  "_comment": "Per-skill default operating mode + the global safe-set / never-autofix lists. See shared/modes-and-policies.md.",
+  "globalDefault": "suggest-then-review",
+  "skillModes": {
+    "penpot-router": "suggest",
+    "penpot-foundations": "review",
+    "penpot-component-factory": "review",
+    "penpot-build-screen": "review",
+    "penpot-build-from-code": "review",
+    "penpot-document-handoff": "review",
+    "penpot-audit-accessibility": "suggest",
+    "penpot-audit-tokens": "suggest",
+    "penpot-design-to-code-review": "suggest",
+    "penpot-migrate": "review",
+    "penpot-rename-layers": "autofix"
+  },
+  "safeSet": [
+    "rename an unnamed or auto-named layer to a semantic name",
+    "replace a raw value that EXACTLY equals an existing token's resolved value with that token",
+    "reorder documentation pages or layer trees without changing geometry",
+    "add documentation/metadata (descriptions, plugin-data tags)"
+  ],
+  "neverAutofix": [
+    "any geometry change (position, size, layout)",
+    "creating, deleting, or restructuring variants or components",
+    "detach() on a component instance",
+    "creating a new token (propose; human approves name/value/tier)",
+    "deleting or renaming shared library assets",
+    "any token swap that is a near-match rather than an exact equality"
+  ],
+  "rule": "Auto-fix is opt-in per change type, never per skill wholesale. When in doubt, downgrade to Apply-with-review."
+}

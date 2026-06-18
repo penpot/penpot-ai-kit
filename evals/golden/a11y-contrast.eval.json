@@ -1,0 +1,16 @@
+{
+  "id": "a11y-contrast",
+  "skill": "penpot-audit-accessibility",
+  "fixture": "fixtures/state: a Board with white text (#FFFFFF) on a light gray fill (#CCCCCC) and a 20x20 icon button",
+  "expected": {
+    "must_detect": [
+      "the #FFFFFF-on-#CCCCCC text as a 1.4.3 contrast failure (ratio < 4.5:1)",
+      "the 20x20 interactive target as below the 24x24 (2.5.8) threshold"
+    ],
+    "must_not": [
+      "auto-fixing anything (this skill is read-only/suggest)",
+      "claiming a pass without computing the ratio"
+    ]
+  },
+  "pass_criteria": "Report lists both issues with severity, computed ratio, required threshold, a concrete fix, and confidence; no canvas mutation occurs."
+}

@@ -1,0 +1,18 @@
+{
+  "id": "token-governance",
+  "skill": "penpot-audit-tokens",
+  "fixture": "fixtures/state: token color.action.primary.bg = #0066FF exists; a Board uses a hardcoded #0066FF fill and an 18px rowGap; one unused token spacing.10 exists",
+  "expected": {
+    "must_detect": [
+      "the hardcoded #0066FF fill as an EXACT match to color.action.primary.bg (exact-swappable)",
+      "the 18px rowGap as off-grid (suggest nearest 4px token)",
+      "spacing.10 as an unused/orphan token"
+    ],
+    "must_not": [
+      "auto-applying the off-grid rounding (only exact swaps are safe-set)",
+      "creating a new token without routing to penpot-foundations",
+      "auto-swapping without explicit opt-in"
+    ]
+  },
+  "pass_criteria": "Governance report marks the #0066FF finding as exact-swappable, the 18px as review-only, lists the unused token; only the exact swap is offered for opt-in auto-apply."
+}

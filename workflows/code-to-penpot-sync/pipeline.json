@@ -1,0 +1,14 @@
+{
+  "id": "code-to-penpot-sync",
+  "pattern": "reconcile-loop",
+  "description": "Build from code, detect drift vs source/Storybook, reconcile.",
+  "maxIterations": 3,
+  "steps": [
+    { "id": "build", "skill": "penpot-build-from-code", "inputs": ["sourceCode", "designSystem", "targetView"], "checkpoint": true, "next": "review", "on_fail": "halt" },
+    { "id": "review", "skill": "penpot-design-to-code-review", "inputs": ["scope:selection", "sourceRef"], "checkpoint": false, "next": "decide", "on_fail": "report" },
+    { "id": "decide", "type": "branch",
+      "if": "review.drift == 0", "thenNext": "done",
+      "elseNext": "build", "elseInputs": ["reconcile:review.findings"] }
+  ],
+  "output": "report: { screenId, drift, resolved, flaggedForCode }"
+}

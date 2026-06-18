@@ -1,0 +1,19 @@
+{
+  "id": "figma-migration-smoke",
+  "skill": "penpot-migrate",
+  "fixture": "fixtures/state: a pasted Figma export (degraded mode) with 2 Variables (a color + a spacing), 1 component set (Button, 2 variants), and 1 frame using Auto Layout",
+  "expected": {
+    "must_create": [
+      "an IR object before any Penpot write",
+      "2 Penpot tokens migrated from the Variables (real token types)",
+      "a Button component with its 2 variants",
+      "a screen Board whose Auto Layout became a flex layout"
+    ],
+    "must_not": [
+      "writing Penpot directly from Figma data without building the IR",
+      "recreating Variables as hardcoded values",
+      "claiming a perfect 1:1 if any feature didn't map"
+    ]
+  },
+  "pass_criteria": "validateFidelity.js shows tokens+components+screen migrated; gaps (if any) reported honestly; IR persisted to the ledger."
+}

@@ -1,0 +1,18 @@
+{
+  "id": "brief-to-dashboard",
+  "workflow": "brief-to-screen",
+  "fixture": "fixtures: filled prompts/design-brief.md for a simple analytics dashboard (nav, KPI row, chart card, table), desktop 1440, Modern SaaS profile, reusing an existing token+component system",
+  "expected": {
+    "must_create": [
+      "a screen Board with column flex containing the briefed sections",
+      "component instances reused for nav/buttons where available",
+      "all colors/spacing/type bound to semantic tokens"
+    ],
+    "must_not": [
+      "a one-shot single execute_code that builds the whole screen",
+      "hardcoded colors/spacing",
+      "remaining High/Medium accessibility issues at exit"
+    ]
+  },
+  "pass_criteria": "Built section by section with checkpoints; penpot-audit-accessibility reports 0 High/Medium at loop exit (or surfaces an explained blocker)."
+}

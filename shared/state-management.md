@@ -1,0 +1,56 @@
+# State Management & Resumability
+
+> How a skill keeps state across many `execute_code` calls and survives context truncation. Every long-running skill links here.
+
+A non-trivial design operation is dozens of `execute_code` calls. Two things will break a naive
+agent: (1) losing track of ids it created, and (2) the conversation getting summarized/truncated
+mid-run. This protocol fixes both.
+
+## Primary ledger: `storage` + `setSharedPluginData`
+
+There are two persistence surfaces. **Prefer these — they always work, including on remote/SaaS and
+sandboxed clients.**
+
+1. **`storage`** (in-memory across `execute_code` calls in the same session). Cache discovery
+   results, created ids, and reusable helper functions here.
+   ```js
+   storage.run = storage.run || {};
+   storage.run.tokensSetId = set.id;          // remember what you made
+   storage.run.created = storage.run.created || [];
+   storage.run.created.push({ kind: "component", name: "Button", id: comp.id });
+   ```
+
+2. **`setSharedPluginData` / `getSharedPluginData`** (persisted INTO the Penpot file itself, so it
+   survives even a brand-new session). Write a small ledger keyed by `RUN_ID`.
+   ```js
+   const NS = "penpot-ai";                      // plugin-data namespace
+   penpot.currentFile.setSharedPluginData(NS, `${RUN_ID}.phase`, "2");
+   penpot.currentFile.setSharedPluginData(NS, `${RUN_ID}.ledger`, JSON.stringify(ledger));
+   // resume:
+   const raw = penpot.currentFile.getSharedPluginData(NS, `${RUN_ID}.ledger`);
+   const ledger = raw ? JSON.parse(raw) : { phase: 0, created: [] };
+   ```
+   Verify the exact `setSharedPluginData` signature with `penpot_api_info` on the relevant type
+   before relying on it.
+
+## Secondary (optional optimization): a disk state file
+A `/tmp/penpot-ai-state-{RUN_ID}.json` mirror can be handy when the agent host has a writable
+filesystem. **Treat it as optional** — never make correctness depend on it, because remote/SaaS
+clients may not have a persistent or writable `/tmp`. The in-file ledger above is authoritative.
+
+## Resume protocol (after truncation)
+1. Read the in-file ledger for the active `RUN_ID`.
+2. Re-derive "what exists" with `penpotUtils.shapeStructure` / `tokenOverview` rather than trusting
+   memory alone.
+3. Continue from `ledger.phase`. Re-running an idempotent step (see below) must be safe.
+
+## Idempotency
+Every create step checks for existence first, by name, so re-running never duplicates:
+```js
+let set = penpot.library.local.tokens.sets.find(s => s.name === "semantic");
+if (!set) set = penpot.library.local.tokens.addSet({ name: "semantic" });
+```
+
+## What goes in the ledger
+`{ runId, phase, created: [{kind, name, id}], decisions: [...], assumptions: [...], pendingReview: [...] }`
+— enough to reconstruct progress and to produce the final structured report.

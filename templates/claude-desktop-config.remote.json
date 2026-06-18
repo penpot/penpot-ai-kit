@@ -1,0 +1,13 @@
+{
+  "_comment": "Claude Desktop — Penpot MCP via remote SaaS. Claude Desktop speaks MCP over stdio, so the streamable-HTTP remote endpoint is reached through the mcp-remote proxy (npx, no install). Replace YOUR_SECRET_MCP_KEY with your personal MCP Key from Penpot > Your Account > Integrations. Keep the Penpot plugin window open during a session. If your client natively supports streamable-HTTP/SSE MCP servers, you can instead point it straight at the url with no proxy.",
+  "mcpServers": {
+    "penpot": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://design.penpot.app/mcp/stream?userToken=YOUR_SECRET_MCP_KEY"
+      ]
+    }
+  }
+}

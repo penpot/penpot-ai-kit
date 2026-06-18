@@ -1,0 +1,12 @@
+{
+  "id": "design-system-bootstrap",
+  "pattern": "sequential",
+  "description": "Stand up a Penpot design system: tokens -> components -> governance -> naming.",
+  "steps": [
+    { "id": "tokens", "skill": "penpot-foundations", "inputs": ["brandPalette", "typeRatio", "spacingGrid"], "checkpoint": true, "next": "components", "on_fail": "halt" },
+    { "id": "components", "skill": "penpot-component-factory", "inputs": ["coreComponents", "tokensFrom:tokens"], "checkpoint": true, "next": "govern", "on_fail": "halt" },
+    { "id": "govern", "skill": "penpot-audit-tokens", "inputs": ["scope:library"], "checkpoint": true, "next": "name", "on_fail": "report" },
+    { "id": "name", "skill": "penpot-rename-layers", "inputs": ["scope:library"], "checkpoint": false, "next": "done", "on_fail": "report" }
+  ],
+  "output": "report: { tokensCreated, componentsCreated, governanceFindings, renamed }"
+}

@@ -1,0 +1,14 @@
+{
+  "_comment": "Cursor — Penpot MCP. Keep ONE server named 'penpot' (the installer manages an entry with that name — other names create duplicates it can't detect). REMOTE shown active: streamable-HTTP endpoint (use the url form, or the mcp-remote proxy if your client is stdio-only). For LOCAL (self-hosted), replace the entry with the one in '_local-alternative'. Replace YOUR_SECRET_MCP_KEY. Keep the Penpot plugin window open during a session.",
+  "_local-alternative": {
+    "penpot": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "http://localhost:4401/sse", "--allow-http"]
+    }
+  },
+  "mcpServers": {
+    "penpot": {
+      "url": "https://design.penpot.app/mcp/stream?userToken=YOUR_SECRET_MCP_KEY"
+    }
+  }
+}
