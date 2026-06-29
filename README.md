@@ -1,5 +1,5 @@
 # Penpot AI Kit
-<img width="1771" height="699" alt="penpot-AI-kit" src="https://github.com/user-attachments/assets/2ca782b0-f773-4675-bf41-c66cc872ea69" />
+<img width="1278" height="639" alt="Penpot AI Kit" src="https://github.com/user-attachments/assets/f4d016df-ebea-4520-af69-058ae300488e" />
 
 **Let an AI assistant work directly inside your Penpot file, while you stay in control.**
 
