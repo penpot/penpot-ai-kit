@@ -2,6 +2,17 @@
 
 > Hard-won facts about the real Plugin API that the model gets wrong by default. Every skill links here. Verify any unfamiliar method with `penpot_api_info` before using it.
 
+> **Version-pinned, probeable gotchas:** #8 (padding token binding) and #13 (`applyToText` fontId)
+> were verified live against a specific Penpot build (see `docs/mcp-api-findings.md`) and may be
+> fixed upstream. Before a heavy build session — or whenever `penpot.version` differs from the last
+> probed version in the ledger — run `shared/scripts/capability-probe.js` (two phases, innocuous,
+> self-cleaning) and trust its verdict over this file. **#12 is NEVER probed** (the probe itself
+> corrupts the file); treat it as standing policy until manually re-verified upstream.
+>
+> **Last live probe (2026-07-09, Penpot 2.17.0 PRE):** #8 padding binding **fixed** · #13
+> `applyToText` **fixed** · `["all"]` **still broken** · direct property set does **NOT** clear a
+> token binding (the 2.17 MCP overview claims it does — the overview is wrong; #2 stands).
+
 ## 1. Style arrays are immutable item-by-item — replace the whole array
 `fills`, `strokes`, `shadows` are arrays whose **individual items cannot be mutated**. To change a
 fill you must assign a brand-new array:
@@ -56,15 +67,17 @@ Create token sets/tokens through `penpot.library.local.tokens`:
 `"borderRadiusTopLeft/TopRight/BottomRight/BottomLeft"`, `"width"`, `"height"`. There is **no** single
 `"borderRadius"` or `"padding"` property.
 
-**Padding and `"all"` do NOT accept token bindings at runtime** (verified live; see
-`docs/mcp-api-findings.md` Finding 8): `applyToken(tok, ["paddingTop"])` (any side, any numeric token
-type) and `applyToken(tok, ["all"])` throw `Value not valid`, even though the overview lists them.
-Workarounds:
-- **Padding:** set resolved NUMBERS on the layout (`flex.topPadding = …`, value from the spacing
-  token's `resolvedValue`) and record the mirrored token name in the run report so governance can
-  re-bind when the API supports it. Never "fix" a failed padding binding by mis-binding it to a gap.
-- **Radius:** apply the token to the **four explicit corner props** (works) instead of `["all"]`.
-Gaps (`"rowGap"`/`"columnGap"`) bind reliably.
+**Padding bindings are version-dependent; `"all"` is broken everywhere tested.**
+- **Penpot ≥ 2.17.0** (probed live 2026-07-09): `applyToken(tok, ["paddingTop"])` **works** — the
+  binding sticks and the layout padding resolves. Bind paddings normally.
+- **Penpot 2.16.x** (Finding 8, `docs/mcp-api-findings.md`): every padding side threw
+  `Value not valid`. Workaround for old instances only: set resolved NUMBERS on the layout
+  (`flex.topPadding = …` from the token's `resolvedValue`) and record the mirrored token name in
+  the run report so governance can re-bind. Never mis-bind a failed padding to a gap.
+- **`applyToken(tok, ["all"])` still throws on 2.17.0** — apply explicit per-property lists; for
+  radius use the **four explicit corner props**.
+Gaps (`"rowGap"`/`"columnGap"`) bind reliably. When in doubt, run the capability probe and trust
+its verdict for the connected instance.
 
 ## 9. Components are created from shapes, instantiated from the library
 `penpot.library.local.createComponent(shapes)` makes a component; `component.instance()` creates a
@@ -111,11 +124,26 @@ specific variant (`variantComp.instance()`) are safe — only *mutation* poisons
 attempt the variant flow, have the user duplicate the file first and verify saves still succeed after
 the first mutation.
 
-## 13. Don't set fonts via `font.applyToText()` — it writes a corrupt `fontId`
-`font.applyToText(text, variant)` sets a broken uuid as `fontId`, so exports render with a
-serif/mono fallback. Set the font fields directly from the `Font`/`FontVariant` objects instead:
-`text.fontId = font.fontId` (e.g. `"gfont-orbitron"`), plus `fontFamily`, `fontVariantId`,
-`fontWeight`, `fontStyle`.
+**Penpot ≥ 2.17.0 note (2026-07-09):** the MCP now ships `penpotUtils.createVariantContainer(
+[{ shape, properties }])`, a first-class helper wrapping the whole multi-step variant workflow —
+strong signal this bug got upstream attention. This gotcha is deliberately NOT auto-probed (the
+probe would corrupt the file). Before relying on variants: duplicate the file, run
+`createVariantContainer` on two throwaway components, and confirm saves still succeed; only then
+lift the restriction for that instance.
+
+## 13. `font.applyToText()` — corrupt `fontId` on old versions; FIXED in ≥ 2.17.0
+On Penpot 2.16.x, `font.applyToText(text, variant)` set a broken uuid as `fontId`, so exports
+rendered with a serif/mono fallback. **Probed live on 2.17.0 (2026-07-09): fixed** — it writes a
+valid id (e.g. `"gfont-m-plus-2"`). On older instances (or if the probe says `reproduces`), set the
+font fields directly from the `Font`/`FontVariant` objects instead: `text.fontId = font.fontId`,
+plus `fontFamily`, `fontVariantId`, `fontWeight`, `fontStyle`.
+
+## 13b. `penpot.fonts.findByName` matches by SUBSTRING — verify the exact family
+`findByName("Roboto")` can return **"Roboto Mono"** (first substring hit), silently setting a
+monospace where you wanted the sans (observed live 2026-07-09 on 2.17.0 — the whole screen
+rendered mono). Resolve fonts exactly: `penpot.fonts.all.find(f => f.name === "Roboto")`, then
+`font.applyToText(text, variant)` (safe on ≥2.17, see #13). After `applyToText`, re-assert
+`fontSize`/`letterSpacing`/`lineHeight` — the variant application can reset them.
 
 ## 14. `layoutChild.absolute` children use PAGE coordinates — and boards clip at their edges
 With `child.layoutChild.absolute = true`, setting `child.x`/`child.y` uses **absolute page

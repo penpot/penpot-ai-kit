@@ -2,7 +2,7 @@
 name: penpot-audit-tokens
 description: "Audit a Penpot design for design-system / token GOVERNANCE issues (distinct from accessibility): hardcoded colors where a token exists, off-grid spacing, orphan/unresolved/unused tokens, duplicated values, and detached parts that should be component instances. Produces a severity report and suggests semantic-token swaps. Triggers: 'audit tokens', 'find hardcoded colors', 'token governance', 'check design system consistency', 'find off-grid spacing', 'detect raw values', 'are we using tokens correctly'."
 disable-model-invocation: false
-version: 0.1.0
+version: 0.2.0
 audiences: [design-system, design-engineer]
 mode-default: suggest
 requires:
@@ -15,9 +15,10 @@ requires:
 # penpot-audit-tokens — design-system governance auditor
 
 ## 1. Title + How it works
-`penpot-audit-tokens` enforces token governance — a concern **separate from accessibility**. Four MCP
-tools: `high_level_overview` (first), `penpot_api_info` (verify signatures), `execute_code` (read
-shapes/tokens), `export_shape` (evidence). It collects every fill/stroke/spacing/radius value, compares
+`penpot-audit-tokens` enforces token governance — a concern **separate from accessibility**. Every
+mutation goes through `execute_code`; validate visually with `export_shape`; read structure with
+`penpotUtils.shapeStructure` (full tool surface: `shared/penpot-mcp-tool-reference.md`). It collects
+every fill/stroke/spacing/radius value, compares
 against the active token system (`penpotUtils.tokenOverview()`), and reports hardcoded values, off-grid
 spacing, orphan/unresolved tokens, and duplicates — each with a suggested semantic-token swap.
 
@@ -35,7 +36,8 @@ Full surface: `shared/penpot-mcp-tool-reference.md`. Key calls: `execute_code` w
 - Read raw values from `shape.fills`/`shape.strokes` (hex), `shape.borderRadius*`, flex `rowGap`/`columnGap`/`*Padding`, layout margins.
 - A shape's applied tokens are in `shape.tokens` (`{ property: tokenName }`). A property with a raw value but no entry there is "hardcoded".
 - Token resolved values via `token.resolvedValue`. Use exact token `type` strings from `shared/tokens-schema.json`.
-- Comparisons are read-only; the only mutation (exact-equality swap) uses `shape.applyToken`.
+- Comparisons are read-only; the only mutation (exact-equality swap) uses `shape.applyToken` — **#2 in `shared/plugin-api-gotchas.md`**: async, chunked, verify in a later call.
+- Verify unfamiliar signatures with `penpot_api_info` before relying on them.
 
 ## 5. Token-Aware Brief Contract
 - **Context** — scope (page/selection/library), the active token system.
@@ -69,6 +71,8 @@ Findings map to `shared/tokens-schema.json` governanceRules: `noHardcodedColor`,
 ```
 { severity, rule, element, property, current, suggestedToken, exactMatch:bool, confidence }
 ```
+
+The final report must ALSO be emitted as a JSON object per `shared/report-schemas/token-governance-report.schema.json` (findings carry `exactMatch` — only exact-equality swaps are safe-set) and mirrored to the run ledger.
 
 ## 9. Modes & Policies
 Default **suggest**. The only auto-fix (per `shared/modes-and-policies.md` safe set) is the exact-equality

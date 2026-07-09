@@ -161,9 +161,12 @@ node scripts/install/check-updates.mjs          # JSON; exit 0 = current, 10 = u
 node scripts/install/check-updates.mjs --hook    # SILENT when current; one actionable line when stale
 ```
 
-- **Updates available** → re-run `install-seed.mjs` to refresh the seed. For Claude Code **native**
-  installs, also re-run `install-behavior.mjs` so `~/.claude/skills/` picks up the new content.
-- Runs from the clone **or** from the seed (it resolves the clone via the stamped `sourcePath`).
+- **Updates available** → run the one-step updater: `node scripts/install/update.mjs`. It chains
+  `install-seed.mjs` (refresh the seed) **and** `install-behavior.mjs` for every client recorded in the
+  manifest — so e.g. Claude Code's vendored copies in `~/.claude/skills/` never lag behind the seed.
+  MCP configs are untouched (a content update never changes the key/server entry).
+- Both `check-updates.mjs` and `update.mjs` run from the clone **or** from the seed (the clone is
+  resolved via the stamped `sourcePath`).
 
 **Elegant zero-touch option (Claude Code):** add a `SessionStart` hook that runs the `--hook` form. It
 prints nothing when current (no noise, no tokens) and surfaces a single "updates available — re-seed"
@@ -175,8 +178,19 @@ clone: the clone is disposable, and the seed copy resolves the clone via the sta
 
 ## Uninstall (on request only)
 
-Manifest-driven and confirmed step by step — show the user the full removal list **before** deleting
-anything:
+Manifest-driven and confirmed step by step. **Preferred path:** the script does the whole dance —
+plan first, apply only after the user's OK:
+
+```bash
+node scripts/install/uninstall.mjs                 # prints the removal PLAN only (touches nothing)
+node scripts/install/uninstall.mjs --yes           # applies it after the user confirms
+node scripts/install/uninstall.mjs --client cursor --yes   # remove one client, keep the rest
+```
+
+It deletes kit artifacts, strips only the kit's marker blocks from shared files (CLAUDE.md,
+.windsurfrules, …), removes only the `penpot` MCP entry, and removes the seed last. It does NOT
+touch the SessionStart hook (user hooks share that file) — relay its reminder. Manual fallback
+(no manifest / auditing what it would do):
 1. Read `~/.penpot-ai-kit/install-manifest.json`. `installs` records, **per client**, the files that
    were wired and which MCP config holds the `penpot` entry. (No manifest? Fall back to the per-client
    locations table in `docs/clients.md` and confirm each path with the user.)

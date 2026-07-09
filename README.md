@@ -71,7 +71,7 @@ safe to re-run:
 
 | You say… | It does… |
 |----------|----------|
-| “Update this Penpot AI Kit” (e.g. after a `git pull` or local edits) | Refreshes the installed copy and re-wires the skills. Idempotent. |
+| “Update this Penpot AI Kit” (e.g. after a `git pull` or local edits) | One step (`update.mjs`): refreshes the installed copy **and** re-wires every installed client's skills. Idempotent. |
 | “Is my Penpot AI Kit up to date?” | Compares clone vs. installed copy (a content hash, costs ~0 tokens) and answers in one line. |
 | “Set up automatic update checks” | Wires a silent session-start hook that only speaks up when the kit is stale (Claude Code). |
 | “Install the kit for Cursor too” | Re-runs the install for another client — earlier installs are kept and recorded. |
@@ -175,6 +175,7 @@ but only trivially-safe changes (like renaming `Rectangle 12`).
 | 🔍 `penpot-audit-accessibility` | WCAG 2.1/2.2 AA audit: contrast, tap-target sizes, heading structure, focus order — with a severity-ranked report. | *“Check this screen for accessibility problems.”* |
 | 🔍 `penpot-audit-tokens` | Design-system governance: hardcoded values, off-grid spacing, orphan/duplicate tokens, detached instances. | *“Find hardcoded colors that should be tokens.”* |
 | 🔍 `penpot-design-to-code-review` | Compares the Penpot design against the real component/Storybook and reports the **drift**, side by side. | *“Does my code match this design?”* |
+| 🔍 `penpot-design-md` | Extracts a portable **DESIGN.md** spec from the file's real tokens, assets and sampled components — so humans and coding agents can reproduce the system without opening Penpot. | *“Generate a DESIGN.md for this design system.”* |
 
 ### Skills — migrate & housekeeping
 
@@ -241,18 +242,19 @@ skill are recorded in [`skills.json`](skills.json).
 AGENTS.md (instructions)
   → skills/ (capabilities)
     → workflows/ (orchestration)
-      → Penpot MCP (4 tools: high_level_overview, penpot_api_info, execute_code, export_shape)
+      → Penpot MCP (core tools: high_level_overview, penpot_api_info, execute_code, export_shape; + import_image in local mode)
         → policies/ (suggest / review / autofix + safe set)
           → evals/ (golden tests)
-shared/ = single source of truth (tool reference, API gotchas, token schema, naming, state, modes)
+shared/ = single source of truth (tool reference, API gotchas, token schema, naming, state, modes,
+          visual self-review, report schemas, pipeline schema, capability probe)
 ```
 
 ### Repository layout
 ```
 AGENTS.md            instructions layer
 INSTALL.md           conversational installer playbook ("Install this Penpot AI Kit")
-scripts/install/     installer helpers (install one-shot + detect-client, install-seed, write-mcp-config, install-behavior, lib)
-shared/              single source of truth (tool ref, gotchas, token schema, naming, state, modes, SKILL template)
+scripts/install/     installer helpers (install one-shot + detect-client, install-seed, write-mcp-config, install-behavior, update one-step, check-updates, lib)
+shared/              single source of truth (tool ref, gotchas, token schema, naming, state, modes, SKILL template, visual self-review, report-schemas/, pipeline.schema.json, scripts/capability-probe.js)
 skills/              11 skills, each: SKILL.md + references/ (progressive disclosure) + scripts/ (execute_code templates)
 workflows/           6 orchestration recipes (README.md prose + pipeline.json)
 prompts/             token-aware brief templates
@@ -267,9 +269,15 @@ skills.json          aggregate manifest · .well-known/agent-skills/index.json d
 1. Copy the anatomy in `shared/SKILL-template.md` (frontmatter + the 16 sections).
 2. Ground every API call in `shared/penpot-mcp-tool-reference.md` + `shared/plugin-api-gotchas.md`;
    verify unfamiliar members with `penpot_api_info`. Use the real token types in `shared/tokens-schema.json`.
-3. Add an Anti-Rationalization Table and a Token-Aware Brief Contract.
-4. Register the skill in `skills.json`, `.well-known/agent-skills/index.json`, and `skills.lock`.
-5. Add a golden eval under `evals/golden/`.
+3. Add an Anti-Rationalization Table and a Token-Aware Brief Contract. If the skill mutates the
+   canvas, wire the visual self-review loop (`shared/visual-self-review.md`); if it audits, define
+   its structured report in `shared/report-schemas/`.
+4. Register the skill in `skills.json` and `.well-known/agent-skills/index.json`, and route it in
+   `workflows/routing/pipeline.json`.
+5. Add a golden eval under `evals/golden/` (runnable with `scripts/dev/run-eval.mjs`).
+6. Lint + lock: `node scripts/dev/validate-kit.mjs` must pass (it checks manifests, versions,
+   modes, `requires:`, pipelines, evals, and dangling `penpot-*` references), then regenerate
+   hashes with `node scripts/dev/update-lock.mjs`.
 
 </details>
 

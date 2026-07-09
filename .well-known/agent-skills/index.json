@@ -2,16 +2,77 @@
   "$schema": "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
   "_comment": "Agent Skills Discovery index (Cloudflare RFC-style). Field names track the spec version; adjust when the schema version changes. Lets agentic clients discover and fetch skills on demand.",
   "skills": [
-    { "name": "penpot-router", "version": "0.1.0", "path": "skills/penpot-router/SKILL.md", "description": "Route any Penpot request to exactly one skill or workflow." },
-    { "name": "penpot-foundations", "version": "0.1.0", "path": "skills/penpot-foundations/SKILL.md", "description": "Token + library foundation: primitive/semantic/component tiers, themes, infer-from-design." },
-    { "name": "penpot-component-factory", "version": "0.1.0", "path": "skills/penpot-component-factory/SKILL.md", "description": "Components with complete, tokenized variant matrices and all interactive states." },
-    { "name": "penpot-build-screen", "version": "0.1.0", "path": "skills/penpot-build-screen/SKILL.md", "description": "Design production-grade screens from a brief, reusing the system, section by section." },
-    { "name": "penpot-build-from-code", "version": "0.1.0", "path": "skills/penpot-build-from-code/SKILL.md", "description": "Translate app code/pages into an on-system Penpot screen bound to tokens." },
-    { "name": "penpot-document-handoff", "version": "0.1.0", "path": "skills/penpot-document-handoff/SKILL.md", "description": "Annotate a design for handoff with a hideable layer: context card, numbered pins, matching notes, tooltips." },
-    { "name": "penpot-audit-accessibility", "version": "0.1.0", "path": "skills/penpot-audit-accessibility/SKILL.md", "description": "WCAG 2.1/2.2 AA audit: contrast, target size, semantics, focus order." },
-    { "name": "penpot-audit-tokens", "version": "0.1.0", "path": "skills/penpot-audit-tokens/SKILL.md", "description": "Token governance audit: hardcoded values, off-grid spacing, orphan/duplicate tokens." },
-    { "name": "penpot-design-to-code-review", "version": "0.1.0", "path": "skills/penpot-design-to-code-review/SKILL.md", "description": "Extract Penpot markup/style and report drift vs source component/Storybook." },
-    { "name": "penpot-migrate", "version": "0.1.0", "path": "skills/penpot-migrate/SKILL.md", "description": "Figma -> Penpot migration via an intermediate representation." },
-    { "name": "penpot-rename-layers", "version": "0.1.0", "path": "skills/penpot-rename-layers/SKILL.md", "description": "Rename layers to semantic HTML names; precondition for audits and code review." }
+    {
+      "name": "penpot-router",
+      "version": "0.2.0",
+      "path": "skills/penpot-router/SKILL.md",
+      "description": "Route any Penpot request to exactly one skill or workflow."
+    },
+    {
+      "name": "penpot-foundations",
+      "version": "0.2.0",
+      "path": "skills/penpot-foundations/SKILL.md",
+      "description": "Token + library foundation: primitive/semantic/component tiers, themes, infer-from-design."
+    },
+    {
+      "name": "penpot-component-factory",
+      "version": "0.2.0",
+      "path": "skills/penpot-component-factory/SKILL.md",
+      "description": "Components with complete, tokenized variant matrices and all interactive states."
+    },
+    {
+      "name": "penpot-build-screen",
+      "version": "0.2.0",
+      "path": "skills/penpot-build-screen/SKILL.md",
+      "description": "Design production-grade screens from a brief, reusing the system, section by section."
+    },
+    {
+      "name": "penpot-build-from-code",
+      "version": "0.2.0",
+      "path": "skills/penpot-build-from-code/SKILL.md",
+      "description": "Translate app code/pages into an on-system Penpot screen bound to tokens."
+    },
+    {
+      "name": "penpot-document-handoff",
+      "version": "0.2.0",
+      "path": "skills/penpot-document-handoff/SKILL.md",
+      "description": "Annotate a design for handoff with a hideable layer: context card, numbered pins, matching notes, tooltips."
+    },
+    {
+      "name": "penpot-audit-accessibility",
+      "version": "0.2.0",
+      "path": "skills/penpot-audit-accessibility/SKILL.md",
+      "description": "WCAG 2.1/2.2 AA audit: contrast, target size, semantics, focus order."
+    },
+    {
+      "name": "penpot-audit-tokens",
+      "version": "0.2.0",
+      "path": "skills/penpot-audit-tokens/SKILL.md",
+      "description": "Token governance audit: hardcoded values, off-grid spacing, orphan/duplicate tokens."
+    },
+    {
+      "name": "penpot-design-to-code-review",
+      "version": "0.2.0",
+      "path": "skills/penpot-design-to-code-review/SKILL.md",
+      "description": "Extract Penpot markup/style and report drift vs source component/Storybook."
+    },
+    {
+      "name": "penpot-migrate",
+      "version": "0.2.0",
+      "path": "skills/penpot-migrate/SKILL.md",
+      "description": "Figma -> Penpot migration via an intermediate representation."
+    },
+    {
+      "name": "penpot-rename-layers",
+      "version": "0.2.0",
+      "path": "skills/penpot-rename-layers/SKILL.md",
+      "description": "Rename layers to semantic HTML names; precondition for audits and code review."
+    },
+    {
+      "name": "penpot-design-md",
+      "version": "0.2.0",
+      "path": "skills/penpot-design-md/SKILL.md",
+      "description": "Extract a portable DESIGN.md design-system spec from a Penpot file."
+    }
   ]
 }

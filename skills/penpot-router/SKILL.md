@@ -2,7 +2,7 @@
 name: penpot-router
 description: "Thin dispatcher / entry point for any Penpot request. Use FIRST on any Penpot task to ensure high_level_overview ran, read the user's intent, and route to exactly one target skill or workflow (build a screen, build a design system, audit accessibility, audit tokens, migrate from Figma, rename layers, code review, etc.). Never mutates the canvas. Triggers: 'work on this Penpot file', 'help me with Penpot', 'I want to design/build/audit/migrate in Penpot', 'where do I start', 'which skill should I use', 'route this request', ambiguous Penpot asks."
 disable-model-invocation: false
-version: 0.1.0
+version: 0.2.0
 audiences: [design-system, product-designer, design-engineer, migration]
 mode-default: suggest
 requires:
@@ -11,17 +11,17 @@ requires:
   - shared/tokens-schema.json
   - shared/naming-conventions.md
   - shared/state-management.md
+  - shared/modes-and-policies.md
 ---
 
 # penpot-router — the dispatcher
 
 ## 1. Title + How it works
 `penpot-router` is a **thin entry point**. It does not draw, tokenize, or restructure anything — it
-reads the user's intent and hands off to exactly one downstream skill or workflow. The Penpot MCP
-exposes four tools: `high_level_overview` (call once, first), `penpot_api_info` (verify any unsure
-signature), `execute_code` (the only mutation path; runs Plugin API JS with `penpot`, `penpotUtils`,
-`storage` in scope), and `export_shape` (visual validation). This skill only ever uses
-`high_level_overview` plus **read-only** `execute_code` discovery calls (`penpotUtils.shapeStructure`,
+reads the user's intent and hands off to exactly one downstream skill or workflow. Every mutation goes
+through `execute_code`; validate visually with `export_shape`; read structure with
+`penpotUtils.shapeStructure` (full tool surface: `shared/penpot-mcp-tool-reference.md`). This skill only
+ever uses `high_level_overview` plus **read-only** `execute_code` discovery calls (`penpotUtils.shapeStructure`,
 `penpotUtils.tokenOverview()`). Every mutation belongs to the skill it routes to; this router
 validates nothing visually because it changes nothing. If the host client already auto-selects skills
 by their `description`, this router **degrades gracefully to documentation** — the intent taxonomy in
@@ -34,7 +34,7 @@ one preflight (overview + a quick structure/token read) → one target skill or 
 If intent is ambiguous between two targets, ask one disambiguating question; do not guess and act.
 
 ## 3. Penpot MCP Tool Reference
-Full surface: `shared/penpot-mcp-tool-reference.md`. The router leans on only two of the four tools:
+Full surface: `shared/penpot-mcp-tool-reference.md`. The router leans on only two calls:
 
 | Call | Why the router uses it |
 |------|------------------------|
@@ -45,14 +45,13 @@ The router never calls `execute_code` to create/modify/delete, and never calls `
 (nothing to validate). Downstream skills own all mutation and validation.
 
 ## 4. Plugin API Essentials
-Globals inside `execute_code`: `penpot`, `penpotUtils`, `storage`. The router touches only read paths:
-`penpot.currentPage`, `penpot.selection`, `penpot.library.local.tokens`, `penpotUtils.shapeStructure`,
-`penpotUtils.tokenOverview`, `penpotUtils.getPages`. Relevant gotchas
-(`shared/plugin-api-gotchas.md`): the router must **not** read back any styled/resolved value as if it
-were authoritative (token application is async ~100 ms) — but the router does not apply tokens at all,
-so its only real trap is **doing too much**. If you are unsure whether a discovery helper exists with a
-given signature, verify with `penpot_api_info` (e.g. `penpot_api_info("PenpotUtils", "shapeStructure")`)
-rather than guessing. Do not `console.log` a value you also `return`.
+The router touches only read paths: `penpot.currentPage`, `penpot.selection`,
+`penpot.library.local.tokens`, `penpotUtils.shapeStructure`, `penpotUtils.tokenOverview`,
+`penpotUtils.getPages`. Gotchas (`shared/plugin-api-gotchas.md`):
+- **#2 token application is async (~100 ms)** — never read back a resolved value as authoritative; the
+  router applies no tokens at all, so its only real trap is **doing too much**.
+If you are unsure whether a discovery helper exists with a given signature, verify with
+`penpot_api_info` (e.g. `penpot_api_info("PenpotUtils", "shapeStructure")`) rather than guessing.
 
 ## 5. Token-Aware Brief Contract
 Before routing, restate the request as a compact contract so the chosen skill inherits a clean brief.
@@ -241,7 +240,7 @@ return { recorded: true };
 - `penpot_api_info("PenpotUtils", "shapeStructure")`, `penpot_api_info("PenpotUtils", "tokenOverview")`
   — confirm discovery helper signatures.
 - `penpot_api_info("PenpotFile", "setSharedPluginData")` — confirm the breadcrumb signature.
-- `shared/penpot-mcp-tool-reference.md` — the four-tool surface.
+- `shared/penpot-mcp-tool-reference.md` — the tool surface.
 - `shared/modes-and-policies.md` — why the router is suggest-only.
 - Sibling skills' own `SKILL.md` descriptions — the authoritative trigger lists the router maps onto.
 

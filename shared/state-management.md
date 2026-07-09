@@ -52,5 +52,36 @@ if (!set) set = penpot.library.local.tokens.addSet({ name: "semantic" });
 ```
 
 ## What goes in the ledger
-`{ runId, phase, created: [{kind, name, id}], decisions: [...], assumptions: [...], pendingReview: [...] }`
-— enough to reconstruct progress and to produce the final structured report.
+`{ runId, phase, created: [{kind, name, id}], decisions: [...], assumptions: [...], pendingReview: [...], selfReview: [...] }`
+— enough to reconstruct progress and to produce the final structured report (`selfReview` records
+visual self-correction iterations per `shared/visual-self-review.md`).
+
+## The file profile — don't re-discover the design system every session
+
+Phase 0 discovery (token overview + component inventory) is expensive to repeat in every
+conversation. On first contact with a file, build a compact **file profile** and persist it
+(same namespace, fixed key — not per-RUN_ID):
+
+```js
+const NS = "penpot-ai";
+const profile = {
+  builtAt: new Date().toISOString(),
+  penpotVersion: penpot.version || null,
+  pages: penpotUtils.getPages().map(p => ({ id: p.id, name: p.name })),
+  tokenSets: /* per set: name, active, count, tier guess */ [],
+  tokens: /* name, type, resolvedValue — the value→token reverse index source */ [],
+  components: /* name, id, variant axes */ [],
+  themes: [], namingStyle: "semantic-kebab | auto-generated | mixed",
+};
+penpot.currentFile.setSharedPluginData(NS, "file-profile", JSON.stringify(profile));
+```
+
+**Read protocol (every later session):** read `file-profile` first. If present, verify cheaply
+(token set count + component count + page count match a quick live read) and only re-derive the
+parts that changed; rebuild the whole profile only when the checks disagree or the user says the
+file changed a lot. If the client has its own persistent memory (e.g. Claude Code auto-memory),
+mirror a one-line pointer there ("file X has a kit profile in pluginData") — never the profile
+itself (the file is the source of truth; local memory goes stale).
+
+The capability probe (`shared/scripts/capability-probe.js`) persists its verdicts the same way
+under the `capabilities` key — read it before assuming a version-pinned gotcha applies.

@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://penpot.app/schemas/penpot-ai-kit/pipeline.schema.json",
+  "title": "Penpot AI Kit workflow pipeline",
+  "description": "The single shape every workflows/*/pipeline.json follows. These pipelines are interpreted by the LLM agent (no runner executes them), but a uniform schema keeps them lintable (scripts/dev/validate-kit.mjs) and unambiguous. Two document kinds: a step pipeline (steps[]) or a routing table (routes[]).",
+  "oneOf": [
+    { "$ref": "#/$defs/stepPipeline" },
+    { "$ref": "#/$defs/routingTable" }
+  ],
+  "$defs": {
+    "stepPipeline": {
+      "type": "object",
+      "required": ["id", "pattern", "description", "steps", "output"],
+      "additionalProperties": false,
+      "properties": {
+        "$schema": { "type": "string" },
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "pattern": { "type": "string", "description": "Orchestration pattern name, e.g. sequential, evaluator-optimizer, reconcile-loop, parallelization-aggregation." },
+        "description": { "type": "string" },
+        "maxIterations": { "type": "integer", "minimum": 1, "description": "Upper bound for loop patterns (a branch step pointing back to an earlier step)." },
+        "steps": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/step" } },
+        "exit": { "type": "string", "description": "Prose exit condition for loop patterns." },
+        "output": { "type": "string", "description": "Prose description of the final report object. Structured report field meanings live in shared/report-schemas/." }
+      }
+    },
+    "step": {
+      "oneOf": [
+        { "$ref": "#/$defs/skillStep" },
+        { "$ref": "#/$defs/branchStep" },
+        { "$ref": "#/$defs/parallelStep" },
+        { "$ref": "#/$defs/aggregateStep" },
+        { "$ref": "#/$defs/actionStep" }
+      ]
+    },
+    "skillStep": {
+      "type": "object",
+      "required": ["id", "skill", "inputs", "next", "on_fail"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "skill": { "type": "string", "pattern": "^penpot-[a-z-]+$" },
+        "inputs": { "type": "array", "items": { "type": "string" }, "description": "Input tags: literal (brief), scoped (scope:library), wired from a prior step (tokensFrom:tokens), or alternated (a|b)." },
+        "checkpoint": { "type": "boolean", "default": false, "description": "true = the agent MUST stop and get the user's OK before the next step (AGENTS.md §7)." },
+        "next": { "type": "string", "description": "id of the next step, or the literal 'done'." },
+        "on_fail": { "enum": ["halt", "report"], "description": "halt = stop the pipeline and surface the failure; report = record the failure in the final report and continue." }
+      }
+    },
+    "branchStep": {
+      "type": "object",
+      "required": ["id", "type", "if", "thenNext", "elseNext"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "branch" },
+        "if": { "type": "string", "description": "Condition over a prior step's structured report, e.g. 'evaluate.highOrMedium == 0'. Field meanings are defined in shared/report-schemas/ so the condition is actually checkable." },
+        "thenNext": { "type": "string" },
+        "elseNext": { "type": "string" },
+        "elseInputs": { "type": "array", "items": { "type": "string" }, "description": "Extra inputs passed to elseNext on the false branch." }
+      }
+    },
+    "parallelStep": {
+      "type": "object",
+      "required": ["id", "type", "branches", "next"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "parallel" },
+        "branches": {
+          "type": "array", "minItems": 2,
+          "items": {
+            "type": "object",
+            "required": ["id", "skill", "inputs", "on_fail"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string" },
+              "skill": { "type": "string", "pattern": "^penpot-[a-z-]+$" },
+              "inputs": { "type": "array", "items": { "type": "string" } },
+              "on_fail": { "enum": ["halt", "report"] }
+            }
+          },
+          "description": "Independent skill runs over the same scope. Read-only (suggest-mode) skills only — mutating skills must never run in parallel on one file."
+        },
+        "next": { "type": "string" }
+      }
+    },
+    "aggregateStep": {
+      "type": "object",
+      "required": ["id", "type", "after", "action", "next"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "aggregate" },
+        "after": { "type": "array", "items": { "type": "string" }, "description": "Branch ids whose reports are merged." },
+        "action": { "type": "string" },
+        "next": { "type": "string" },
+        "on_fail": { "enum": ["halt", "report"] }
+      }
+    },
+    "actionStep": {
+      "type": "object",
+      "required": ["id", "type", "action", "next"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "const": "action" },
+        "action": { "type": "string", "description": "A non-skill agent action, constrained by policies/ (e.g. apply safe-set fixes only)." },
+        "checkpoint": { "type": "boolean", "default": false },
+        "next": { "type": "string" },
+        "on_fail": { "enum": ["halt", "report"] }
+      }
+    },
+    "routingTable": {
+      "type": "object",
+      "required": ["id", "pattern", "description", "preflight", "routes", "ambiguity_policy", "mutation"],
+      "additionalProperties": false,
+      "properties": {
+        "$schema": { "type": "string" },
+        "id": { "type": "string" },
+        "pattern": { "const": "routing" },
+        "description": { "type": "string" },
+        "preflight": { "type": "array", "items": { "type": "string" } },
+        "routes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["intent", "target"],
+            "additionalProperties": false,
+            "properties": {
+              "intent": { "type": "array", "items": { "type": "string" } },
+              "target": { "type": "string", "pattern": "^(skill|workflow):[a-z][a-z0-9-]*$" }
+            }
+          }
+        },
+        "ambiguity_policy": { "type": "string" },
+        "mutation": { "const": false }
+      }
+    }
+  }
+}

@@ -32,9 +32,10 @@ A read-only guard (`assertOutsideKit`) refuses any write that resolves inside th
   so the pipelines the router targets are reachable natively), so the skills' repo-relative references
   resolve and Claude Code auto-discovers them by `description`. It also reports stale `penpot-*` skills
   in `~/.claude/skills` that aren't part of the kit (older generations shadow the kit's triggers) —
-  remove them with `--prune` after the user confirms. Known limit: a few SKILL refs point at
-  *another* skill's script by path (e.g. `penpot-foundations/scripts/...`); those are informational and
-  don't resolve cross-bundle. The other clients have no skill loader → they read the seed via the pointer.
+  remove them with `--prune` after the user confirms. Convention: a SKILL.md must only reference
+  files inside its own bundle (`references/`, `scripts/`) or the vendored `shared/`/`policies/` —
+  never another skill's files by path (those don't resolve cross-bundle; `scripts/dev/validate-kit.mjs`
+  guards name-level references). The other clients have no skill loader → they read the seed via the pointer.
 - **Cursor / Windsurf** only read rules **per project** → their behavior pointer goes into the user's
   project dir (`--target-dir`, validated outside the kit). The secret MCP config still goes user/global.
 - **OpenCode** uses the `instructions` array (which *combines* with any `AGENTS.md`) instead of writing a

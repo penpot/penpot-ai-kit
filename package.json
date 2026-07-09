@@ -1,0 +1,41 @@
+{
+  "name": "penpot-ai-kit",
+  "version": "0.3.0",
+  "description": "Agentic design skills, workflows and installer for Penpot via the Penpot MCP. Content-only kit: skills + instructions + policies, no build step.",
+  "type": "module",
+  "bin": {
+    "penpot-ai-kit": "scripts/install/install.mjs",
+    "penpot-ai-kit-update": "scripts/install/update.mjs",
+    "penpot-ai-kit-uninstall": "scripts/install/uninstall.mjs"
+  },
+  "scripts": {
+    "validate": "node scripts/dev/validate-kit.mjs",
+    "lock": "node scripts/dev/update-lock.mjs",
+    "lock:check": "node scripts/dev/update-lock.mjs --check"
+  },
+  "files": [
+    "AGENTS.md",
+    "INSTALL.md",
+    "README.md",
+    "skills.json",
+    "skills.lock",
+    ".well-known/",
+    "skills/",
+    "shared/",
+    "workflows/",
+    "prompts/",
+    "policies/",
+    "templates/",
+    "docs/",
+    "scripts/install/"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elhombretecla/penpot-ai-kit"
+  },
+  "license": "CC-BY-4.0",
+  "keywords": ["penpot", "mcp", "agent-skills", "design-tokens", "ai", "claude", "design-systems"]
+}

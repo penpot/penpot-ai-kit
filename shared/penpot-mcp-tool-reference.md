@@ -2,18 +2,22 @@
 
 > Single source of truth. Every `SKILL.md` transcludes or links to this file. Do not redefine the tool surface inside a skill — point here.
 
-The Penpot MCP exposes **exactly four tools**. There are no others. If a reference describes
-`get_object_tree`, `get_file`, or `penpot_schema`, it is describing a hypothetical/outdated
-surface — **ignore it**. Everything an agent does in Penpot happens through these four tools.
+The Penpot MCP exposes **four core tools**, plus one that is only present in **local mode**
+(`import_image`). If a reference describes `get_object_tree`, `get_file`, or `penpot_schema`,
+it is describing a hypothetical/outdated surface — **ignore it**. If the connected server
+exposes a tool not listed here, do not deny its existence: verify it against the official MCP
+docs (help.penpot.app/mcp) before using it, and prefer the core four for everything they cover.
+Everything an agent reads or mutates in Penpot happens through `execute_code`.
 
-## The four tools
+## The core tools
 
 | Tool | Parameters | Purpose | When to call |
 |------|-----------|---------|--------------|
 | `high_level_overview` | none | Returns the MCP's own usage guidance + a high-level Plugin API overview. | **Always first**, before any other Penpot action in a session. |
 | `penpot_api_info` | `type` (string, required), `member` (string, optional) | Returns the Plugin API type/member documentation (signatures, properties). | Whenever you are about to use a method or property you are not 100% certain exists with that exact signature. |
 | `execute_code` | `code` (string, required) | Runs JavaScript in the Penpot Plugin API context. **The only way to read deep structure and the only way to mutate the canvas.** | Discovery (read) and every create/modify/delete operation. |
-| `export_shape` | `shapeId` (string: an id, or `'selection'`, or `'page'`), `format` (`'png'` default \| `'svg'`), `mode` (`'shape'` default \| `'fill'`) | Renders a shape to an image for visual validation. | After meaningful phases, to verify the result visually (human checkpoint). |
+| `export_shape` | `shapeId` (string: an id, or `'selection'`, or `'page'`), `format` (`'png'` default \| `'svg'`), `mode` (`'shape'` default \| `'fill'`) | Renders a shape to an image for visual validation. | After meaningful phases, to verify the result visually — both for the agent's own visual self-review and for the human checkpoint. Limited in remote mode. |
+| `import_image` (**local mode only**) | see the live tool schema | Adds a local image asset to the design. | Only when the MCP runs locally; in remote mode use `penpot.uploadMediaUrl`/`uploadMediaData` through `execute_code` instead. |
 
 ## Globals available inside `execute_code`
 

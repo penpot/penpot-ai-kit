@@ -2,7 +2,7 @@
 name: penpot-migrate
 description: "Migrate a Figma design into Penpot with high fidelity: Figma Auto Layout → Penpot flex/grid, Figma Variables → Penpot tokens, Figma component sets → Penpot variants, preserving hierarchy. Reads via the Figma MCP, writes via the Penpot MCP, through an intermediate representation (IR). Degrades to manually-pasted Figma data if the Figma MCP is absent. Triggers: 'migrate from Figma', 'import this Figma file into Penpot', 'move our Figma library to Penpot', 'recreate this Figma design in Penpot', 'Figma to Penpot'."
 disable-model-invocation: false
-version: 0.1.0
+version: 0.2.0
 audiences: [migration]
 mode-default: review
 requires:
@@ -11,14 +11,17 @@ requires:
   - shared/tokens-schema.json
   - shared/naming-conventions.md
   - shared/state-management.md
+  - shared/modes-and-policies.md
+  - shared/visual-self-review.md
 ---
 
 # penpot-migrate — Figma → Penpot, fidelity-first
 
 ## 1. Title + How it works
 `penpot-migrate` bridges **two** MCP servers: it reads a Figma design via the Figma MCP and writes it
-into Penpot via the Penpot MCP (four tools: `high_level_overview`, `penpot_api_info`, `execute_code`,
-`export_shape`). It never writes Penpot directly from Figma data — it first builds a normalized
+into Penpot via the Penpot MCP — every mutation goes through `execute_code`; validate visually with
+`export_shape`; read structure with `penpotUtils.shapeStructure` (full tool surface:
+`shared/penpot-mcp-tool-reference.md`). It never writes Penpot directly from Figma data — it first builds a normalized
 **intermediate representation (IR)**, then translates the IR into Penpot constructs (boards, flex,
 tokens, components). If the Figma MCP isn't available, it accepts manually-pasted Figma export/JSON and
 works from that.
@@ -35,10 +38,12 @@ Full surface: `shared/penpot-mcp-tool-reference.md`. Penpot-write side: `createB
 treat them as producing raw data the IR normalizes).
 
 ## 4. Plugin API Essentials
+Gotcha numbers refer to `shared/plugin-api-gotchas.md`.
 - Penpot uses **Boards** (not Frames); Auto Layout maps to Board **flex** (`dir`, gaps, padding, sizing fill/auto/fix) or **grid**.
 - Figma Variables → Penpot tokens via `addToken({type,name,value})` with the real type strings (`shared/tokens-schema.json`). Map Figma modes → Penpot themes.
-- Figma component sets/variants → Penpot variant containers via `penpot.createVariantFromComponents(mainInstances)` (no `combineAsVariants` method); verify with `penpot_api_info`.
-- Token application is async; flex overrides x/y; detach before mutating instance internals.
+- **#9** Figma component sets/variants → Penpot variant containers via `penpot.createVariantFromComponents(mainInstances)` (no `combineAsVariants` method). Beware **#12** — variant *mutation* corrupts the file; prefer create-then-group, never edit a variant container in place.
+- **#2** token application is async — apply in one call, verify `resolvedValue`/`shape.tokens` in a LATER call; **#4** flex overrides child x/y; **#6** detach before mutating instance internals.
+- Verify unfamiliar signatures with `penpot_api_info` first.
 
 ## 5. Token-Aware Brief Contract
 - **Context** — source Figma file/scope, target Penpot file, fidelity expectations.
@@ -50,6 +55,12 @@ treat them as producing raw data the IR normalizes).
 Act as a **migration engineer who prizes structural fidelity**.
 
 ## 6. Mandatory Workflow
+
+> **Visual self-review (mandatory):** before every ✋ checkpoint that shows visual work,
+> run the export → look → fix loop from `shared/visual-self-review.md` — export the unit you
+> just built, inspect the image yourself against the checklist, fix visible defects (max 2
+> iterations), and present that same export with any remaining defects named.
+
 **Phase 0 — Figma analysis.** Read the source (Figma MCP or pasted data); inventory tokens/components/screens (`scripts/analyzeFigmaStructure.js`, `references/01-figma-analysis.md`). ✋ Checkpoint: scope & mapping rules.
 
 **Phase 1 — Build IR.** Normalize into the IR (`scripts/buildIR.js`, `references/02-ir-building.md`). The IR is plain data; no Penpot writes yet. ✋ Checkpoint: review IR coverage.

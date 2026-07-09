@@ -1,12 +1,51 @@
 {
+  "$schema": "../../shared/pipeline.schema.json",
   "id": "figma-migration",
   "pattern": "pipeline",
   "description": "Migrate Figma -> Penpot, then reconcile tokens and run audits.",
   "steps": [
-    { "id": "migrate", "skill": "penpot-migrate", "inputs": ["figmaSource|pastedExport", "mappingRules"], "checkpoint": true, "next": "reconcile", "on_fail": "halt" },
-    { "id": "reconcile", "skill": "penpot-foundations", "inputs": ["mode:extend", "scope:migratedTokens"], "checkpoint": true, "next": "auditTokens", "on_fail": "report" },
-    { "id": "auditTokens", "skill": "penpot-audit-tokens", "inputs": ["scope:file"], "checkpoint": false, "next": "auditA11y", "on_fail": "report" },
-    { "id": "auditA11y", "skill": "penpot-audit-accessibility", "inputs": ["scope:file"], "checkpoint": false, "next": "done", "on_fail": "report" }
+    {
+      "id": "migrate",
+      "skill": "penpot-migrate",
+      "inputs": [
+        "figmaSource|pastedExport",
+        "mappingRules"
+      ],
+      "checkpoint": true,
+      "next": "reconcile",
+      "on_fail": "halt"
+    },
+    {
+      "id": "reconcile",
+      "skill": "penpot-foundations",
+      "inputs": [
+        "mode:extend",
+        "scope:migratedTokens"
+      ],
+      "checkpoint": true,
+      "next": "auditTokens",
+      "on_fail": "report"
+    },
+    {
+      "id": "auditTokens",
+      "skill": "penpot-audit-tokens",
+      "inputs": [
+        "scope:file"
+      ],
+      "checkpoint": false,
+      "next": "auditA11y",
+      "on_fail": "report"
+    },
+    {
+      "id": "auditA11y",
+      "skill": "penpot-audit-accessibility",
+      "inputs": [
+        "scope:file"
+      ],
+      "checkpoint": false,
+      "next": "done",
+      "on_fail": "report"
+    }
   ],
   "output": "report: { fidelity, tokensReconciled, governance, a11y }"
 }

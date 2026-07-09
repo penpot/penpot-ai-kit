@@ -2,7 +2,7 @@
 name: penpot-document-handoff
 description: "Document a Penpot design for handoff by building a clean annotation layer BESIDE the design (never on top of it): a left context card (the 'How might we' goal, business rules, links, status, feedback wanted/not), numbered pin markers on the UI, matching observation/recommendation note cards on the right, and optional tooltips — all wrapped in a single hideable group so the clean design can be revealed. Reuses an annotation component kit + tokens if present; proposes and creates a minimal one if missing. NOT for auditing (use penpot-audit-*) or renaming layers (use penpot-rename-layers). Triggers: 'document this design', 'annotate this screen', 'prepare this for handoff', 'add design annotations', 'explain this flow for devs', 'add observation notes', 'create a critique card', 'spec this screen for handoff'."
 disable-model-invocation: false
-version: 0.1.0
+version: 0.2.0
 audiences: [product-designer, design-engineer, design-system]
 mode-default: review
 requires:
@@ -12,6 +12,7 @@ requires:
   - shared/naming-conventions.md
   - shared/state-management.md
   - shared/modes-and-policies.md
+  - shared/visual-self-review.md
 ---
 
 # penpot-document-handoff — design → annotated handoff
@@ -20,9 +21,9 @@ requires:
 `penpot-document-handoff` turns a finished (or in-progress) design into a self-explaining handoff:
 a **context card** to its left, **numbered pins** on the UI regions, **matching note cards** to its
 right, and optional **tooltips** for transient states — every annotation living in one **hideable
-group** so reviewers can toggle back to the clean design. Four MCP tools: `high_level_overview`
-(first), `penpot_api_info` (verify signatures), `execute_code` (the only mutation path; `penpot` /
-`penpotUtils` / `storage` in scope), `export_shape` (visual checkpoint). It first discovers the target
+group** so reviewers can toggle back to the clean design. Every mutation goes through `execute_code`;
+validate visually with `export_shape`; read structure with `penpotUtils.shapeStructure` (full tool
+surface: `shared/penpot-mcp-tool-reference.md`). It first discovers the target
 design + any existing annotation component kit and tokens, then builds the annotation layer
 **incrementally — one annotation per call** — strictly as a **sibling layer**, never editing the
 design itself.
@@ -43,16 +44,23 @@ Full surface: `shared/penpot-mcp-tool-reference.md`. Key calls this skill leans 
 every checkpoint.
 
 ## 4. Plugin API Essentials
+Gotcha numbers refer to `shared/plugin-api-gotchas.md`.
 - The design is **read-only input**. Read it with `shapeStructure`; resolve pin anchor points from
   child `bounds` (absolute x/y/width/height). Never call `resize`/reparent/`detach`/`remove` on it.
 - Annotation cards are **Boards with flex** (`column-reverse`, matching the reference system); compose
   with append order + gaps + padding, never absolute x/y inside a card.
 - Pins and the context card sit at **absolute** page positions (they are not inside the design's
-  layout) — set `x`/`y` directly, or `layoutChild.absolute = true` if parented into a layout board.
-- Text auto-sizing: set `growType` to `auto-width`/`auto-height` after any `resize()` (which forces
-  `fixed`); sleep ~100 ms before reading back `textBounds`.
-- Token application is **async** (~100 ms) — don't read back resolved fills as authoritative in the
-  same call.
+  layout) — set `x`/`y` directly, or `layoutChild.absolute = true` if parented into a layout board
+  (**#14**: absolute children use PAGE coordinates, and boards clip at their edges).
+- **#3 text auto-sizing** — set `growType` to `auto-width`/`auto-height` after any `resize()` (which
+  forces `fixed`); sleep ~100 ms before reading back `textBounds`.
+- **#2 async token application** — apply in one call, verify `resolvedValue` in a LATER call.
+- **#11 every new Board is born with an OPAQUE WHITE fill — this skill's critical failure mode.**
+  `createBoard()` ships `fills = [{ fillColor: "#FFFFFF", fillOpacity: 1 }]`. Left in place, a
+  structural wrapper's square white corners poke out behind the rounded card it wraps, and any board
+  keeping the literal white is off-system (never themes). **Fill policy:** note/context cards and
+  tooltips are genuine **surfaces** → bind their bg to `color.annotation.surface` (never a literal);
+  inner section boards and wrappers are **structural** → clear with `board.fills = []`.
 - Wrap-to-hide: collect every annotation shape and `group()` them under one named group; hiding =
   `group.hidden = true`. Verify `group()` / grouping signature with `penpot_api_info` before relying on it.
 
@@ -77,6 +85,11 @@ annotates on top of the work and never hardcodes the annotation palette.**
   (context | design | notes) holds.
 
 ## 6. Mandatory Workflow
+
+> **Visual self-review (mandatory):** before every ✋ checkpoint that shows visual work,
+> run the export → look → fix loop from `shared/visual-self-review.md` — export the unit you
+> just built, inspect the image yourself against the checklist, fix visible defects (max 2
+> iterations), and present that same export with any remaining defects named.
 
 **Phase 0 — Discovery (read-only).** `high_level_overview`; resolve the target design
 (`penpot.selection` or a named board) and copy its id into `storage.dh`; read its structure
@@ -219,7 +232,7 @@ return {
 ## 15. Reference Resources
 - `penpot_api_info('Board')`, `penpot_api_info('LibraryComponent')`, `penpot_api_info('Text')`,
   `penpot_api_info('Context','group')` — verify the grouping signature before wrapping.
-- `shared/penpot-mcp-tool-reference.md` (4-tool surface), `shared/plugin-api-gotchas.md` (#11 fill
+- `shared/penpot-mcp-tool-reference.md` (tool surface), `shared/plugin-api-gotchas.md` (#11 fill
   policy; async tokens; resize→growType), `shared/tokens-schema.json` (token `type` spellings).
 
 ## 16. Supporting Files

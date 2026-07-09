@@ -2,7 +2,7 @@
 name: penpot-rename-layers
 description: "Semantically rename Penpot layers to HTML element names (nav, header, main, section, article, button, input, label, h1-h6, p, ul, li, img) or kebab-case role names, replacing auto-generated names like 'Rectangle 12'. Use to clean up layer naming, prepare a file for handoff, or as a precondition for accessibility audits (heading hierarchy) and design-to-code review (semantic mapping). Triggers: 'rename layers', 'semantic layer names', 'rename to HTML elements', 'clean up layer names', 'fix layer naming', 'add semantic names to layers', 'prepare layers for handoff'."
 disable-model-invocation: false
-version: 0.1.0
+version: 0.2.0
 audiences: [design-system, product-designer, design-engineer, migration]
 mode-default: autofix
 requires:
@@ -11,6 +11,7 @@ requires:
   - shared/tokens-schema.json
   - shared/naming-conventions.md
   - shared/state-management.md
+  - shared/modes-and-policies.md
 ---
 
 # Semantic Layer Renaming
@@ -19,7 +20,7 @@ requires:
 
 This skill renames the layers of a Penpot file so each layer carries the **semantic HTML element name** it represents (`nav`, `header`, `main`, `section`, `article`, `button`, `input`, `label`, `h1`–`h6`, `p`, `ul`, `li`, `img`) or, where no element fits, a **kebab-case role name** (`card-grid`, `button-group`, `field-row`). Semantic names are a *precondition* for accessibility audits (a heading hierarchy can only be read off named `h1`–`h6` layers), for design-to-code review (the reviewer maps `button` → `<button>`), and for clean handoff.
 
-The Penpot MCP exposes **exactly four tools**: `high_level_overview` (call once, first), `penpot_api_info` (verify any signature you are unsure of), `execute_code` (the **only** mutation path — runs Plugin API JS), and `export_shape` (render a shape to PNG/SVG for visual checkpoints). **Every read and every rename goes through `execute_code`**; read structure with `penpotUtils.shapeStructure(shape, maxDepth)`; validate visually with `export_shape`. A rename is just `shape.name = "..."` — there is no `renameShape()` API.
+Every mutation goes through `execute_code`; validate visually with `export_shape`; read structure with `penpotUtils.shapeStructure` (full tool surface: `shared/penpot-mcp-tool-reference.md`). A rename is just `shape.name = "..."` — there is no `renameShape()` API.
 
 ## 2. The One Rule That Matters Most
 
@@ -27,27 +28,25 @@ The Penpot MCP exposes **exactly four tools**: `high_level_overview` (call once,
 
 ## 3. Penpot MCP Tool Reference
 
-See `shared/penpot-mcp-tool-reference.md` for the full surface. This skill leans on:
+Full surface: `shared/penpot-mcp-tool-reference.md`. The domain-specific calls:
 
 | Call | Use |
 |------|-----|
-| `high_level_overview` | Once, first, to load MCP guidance. |
-| `penpotUtils.shapeStructure(shape, maxDepth)` | Canonical read of the layer tree (id, name, type, children, layout). |
 | `penpotUtils.findShapes(pred, root)` / `findShapeById(id)` | Collect the inventory; resolve a shape id for renaming. |
 | `penpotUtils.analyzeDescendants(root, evaluator, maxDepth)` | Walk the tree carrying parent context into the classifier. |
-| `execute_code` | Read inventory; apply `shape.name = "..."`. The only mutation path. |
+| `shape.name = "..."` (via `execute_code`) | The rename itself — a plain property write; no rename method exists. |
 | `export_shape(shapeId, 'png', 'shape')` | Visual checkpoint of a renamed region. |
 | `penpot_api_info('Board')` | Verify `name`, `isComponentMainInstance()`, `isComponentCopyInstance()` before relying on them. |
 
 ## 4. Plugin API Essentials
 
-Globals inside `execute_code`: `penpot`, `penpotUtils`, `storage`. Domain-relevant facts and gotchas (full list in `shared/plugin-api-gotchas.md`):
+Domain-relevant facts and gotchas (full list in `shared/plugin-api-gotchas.md`):
 
 - **`shape.name` is a plain writable string.** Rename with `shape.name = "button"`. There is no rename method. The write is synchronous — unlike token application, you may read `shape.name` back in the same call to confirm.
-- **A newly read tree may be stale of nothing here** — renaming does not move, resize, or reparent anything, so geometry is untouched. This is exactly why renaming auto-named layers is reversible and safe.
+- **Renaming touches no geometry** — it does not move, resize, or reparent anything. This is exactly why renaming auto-named layers is reversible and safe.
 - **Component main shapes:** detect with `shape.isComponentMainInstance()` — it returns true for the main instance **and every shape nested inside it**. Renaming any of those renames the component for all copies — out of safe-set. Copy instances (`isComponentCopyInstance()` true) may be renamed. NOTE: the main instance is *also* an instance, so `isComponentInstance()` is true for it too — do **not** use `isComponentInstance() === false` to detect main shapes (that was a real bug). Verify with `penpot_api_info('Board', 'isComponentMainInstance')` before branching.
-- **`width`/`height` are read-only and `parentX`/`parentY` are read-only** — irrelevant to renaming, but do not "fix" geometry while you are in here; that is a different skill and never auto-fix.
-- **Do not `console.log` a value you also `return`.** Return small structured objects (counts + ids + before/after).
+- **#5 `width`/`height`/`parentX`/`parentY` are read-only** — irrelevant to renaming; do not "fix" geometry while you are in here (different skill, never auto-fix).
+- Return small structured objects (counts + ids + before/after pairs).
 - When unsure of any signature, call `penpot_api_info` — guessing is the top source of silent failures.
 
 ## 5. Token-Aware Brief Contract

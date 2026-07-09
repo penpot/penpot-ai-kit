@@ -1,12 +1,16 @@
 {
+  "$schema": "../../shared/pipeline.schema.json",
   "id": "accessibility-gate",
   "pattern": "parallelization-aggregation",
   "description": "Run a11y and token-governance audits in parallel, aggregate, apply safe fixes with review.",
-  "parallel": [
-    { "id": "a11y", "skill": "penpot-audit-accessibility", "inputs": ["scope", "level:AA"], "on_fail": "report" },
-    { "id": "tokens", "skill": "penpot-audit-tokens", "inputs": ["scope"], "on_fail": "report" }
+  "steps": [
+    { "id": "audits", "type": "parallel", "next": "merge",
+      "branches": [
+        { "id": "a11y", "skill": "penpot-audit-accessibility", "inputs": ["scope", "level:AA"], "on_fail": "report" },
+        { "id": "tokens", "skill": "penpot-audit-tokens", "inputs": ["scope"], "on_fail": "report" }
+      ] },
+    { "id": "merge", "type": "aggregate", "after": ["a11y", "tokens"], "action": "dedupe overlapping findings + rank by severity", "next": "safeFix", "on_fail": "report" },
+    { "id": "safeFix", "type": "action", "action": "apply safe-set fixes only (policies/modes.json), opt-in; route everything else to the owning skill", "checkpoint": true, "next": "done", "on_fail": "report" }
   ],
-  "aggregate": { "id": "merge", "after": ["a11y", "tokens"], "action": "dedupe + rank by severity" },
-  "fix": { "id": "safeFix", "checkpoint": true, "policy": "safeSet only, opt-in; route rest to owning skill" },
-  "output": "report: { aggregated, appliedSafeFixes, routedForReview }"
+  "output": "report: { aggregated, appliedSafeFixes, routedForReview } — finding shape per shared/report-schemas/"
 }

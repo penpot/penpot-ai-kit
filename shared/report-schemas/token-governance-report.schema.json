@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://penpot.app/schemas/penpot-ai-kit/token-governance-report.schema.json",
+  "title": "Token governance audit report (penpot-audit-tokens)",
+  "type": "object",
+  "required": ["runId", "scope", "summary", "findings"],
+  "properties": {
+    "runId": { "type": "string" },
+    "scope": { "type": "string" },
+    "summary": {
+      "type": "object",
+      "required": ["high", "medium", "low"],
+      "properties": {
+        "high": { "type": "integer" }, "medium": { "type": "integer" }, "low": { "type": "integer" },
+        "hardcodedValues": { "type": "integer" }, "offGrid": { "type": "integer" },
+        "orphanTokens": { "type": "integer" }, "duplicateTokens": { "type": "integer" },
+        "detachedInstances": { "type": "integer" }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "category", "issue", "fix"],
+        "properties": {
+          "id": { "type": "string" },
+          "severity": { "enum": ["High", "Medium", "Low"] },
+          "category": { "enum": ["hardcoded-value", "off-grid-spacing", "orphan-token", "unresolved-token", "unused-token", "duplicate-value", "detached-instance", "naming"] },
+          "shapeId": { "type": "string" },
+          "shapeName": { "type": "string" },
+          "token": { "type": "string", "description": "The token involved (existing candidate for a swap, or the orphan/duplicate token name)." },
+          "rawValue": { "type": "string" },
+          "issue": { "type": "string" },
+          "fix": { "type": "string" },
+          "exactMatch": { "type": "boolean", "description": "true only when a token resolves to the exact raw value — the only swap allowed in the auto-apply safe set. Near-matches are never auto-applied." }
+        }
+      }
+    },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "truncation": { "type": "string" }
+  }
+}

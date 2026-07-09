@@ -160,15 +160,22 @@ export const KIT_EXCLUDE = new Set([
   ".penpot-kit-install.json", "install-manifest.json", SEED_PROVENANCE_FILE,
 ]);
 
-/** Sorted list of kit-relative file paths under `root`, applying KIT_EXCLUDE. Stable across machines. */
+// Files that SHIP with the seed but do not affect installed behavior — excluded from the content
+// digest only (still copied). README: keeps the update nag from firing on e.g. an image swap.
+// skills.lock: DERIVED from the content (scripts/dev/update-lock.mjs) — including it would make
+// the lock's own integrity field self-referential.
+export const DIGEST_ONLY_EXCLUDE = new Set(["README.md", "skills.lock"]);
+
+/** Sorted list of kit-relative file paths under `root`, applying KIT_EXCLUDE (+ digest-only skips). Stable across machines. */
 export function kitFileList(root) {
   const files = [];
   const walk = (dir) => {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
       if (KIT_EXCLUDE.has(e.name)) continue;
       const p = join(dir, e.name);
+      const rel = relative(root, p).split(sep).join("/");
       if (e.isDirectory()) walk(p);
-      else files.push(relative(root, p).split(sep).join("/"));
+      else if (!DIGEST_ONLY_EXCLUDE.has(rel)) files.push(rel);
     }
   };
   try { walk(root); } catch { /* root missing → empty list */ }

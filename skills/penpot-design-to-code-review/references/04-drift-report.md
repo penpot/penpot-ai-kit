@@ -53,11 +53,11 @@ Escalate a `Major` color drift to `Critical` whenever it crosses the contrast th
 
 Every non-`match` finding carries a one-line, concrete reconciliation that names **which side changes**, per the authority table (`02 §4`):
 - design-authoritative dimension, code wrong → *"Bind `--color-action-primary-bg` to design token `color.action.primary.bg` (#0066ff); code currently hardcodes #1a73e8 (contrast 3.9:1 < 4.5:1, fails WCAG 1.4.3)."*
-- design hygiene (hardcoded in design) → *"Tokenize the design fill #0066ff to `color.action.primary.bg` (hand off to penpot-infer-tokens)."*
+- design hygiene (hardcoded in design) → *"Tokenize the design fill #0066ff to `color.action.primary.bg` (hand off to penpot-foundations)."*
 - off-grid spacing → *"Round 18px to the nearest grid token `spacing.4` (16px) or `spacing.5` (20px); update both sides."*
 - design-only state → *"Code is missing the `:focus-visible` style present in `State=Focus`; add it (Critical, WCAG 2.4.7)."*
 
-Reconciliations are **proposals** — this skill does not mutate. Edits hand off to `penpot-infer-tokens` / `penpot-generate-design` under their checkpoints.
+Reconciliations are **proposals** — this skill does not mutate. Edits hand off to `penpot-foundations` (token work) / `penpot-build-from-code` (structural rebuilds) under their checkpoints.
 
 ## 5. Report schema (what `generateDriftReport.js` returns)
 
@@ -104,7 +104,7 @@ design `spacing.inset.md` = 16px vs code 12px (Δ −4px, on-grid)
 
 ### 💡 Minor — color — label (fill, not tokenized)
 design fill #111827 has no bound token though it matches code.
-→ Tokenize to `color.text.default` (hand off to penpot-infer-tokens).
+→ Tokenize to `color.text.default` (hand off to penpot-foundations).
 
 ## State coverage
 | state | design | code |

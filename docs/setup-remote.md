@@ -4,9 +4,10 @@
 > `penpot.app` through the Penpot remote MCP endpoint. This is the fastest path: no Node, no local
 > server, no checkout. If you self-host Penpot, use `docs/setup-local.md` instead.
 
-The remote MCP exposes the exact same four tools as local (`high_level_overview`,
-`penpot_api_info`, `execute_code`, `export_shape`) — see `shared/penpot-mcp-tool-reference.md`.
-Setup only changes *how the client reaches the server*, never what the tools do.
+The remote MCP exposes the four core tools (`high_level_overview`, `penpot_api_info`,
+`execute_code`, `export_shape`) — local mode additionally exposes `import_image`; `export_shape`
+is more limited on remote. See `shared/penpot-mcp-tool-reference.md`. Setup only changes *how
+the client reaches the server*, never what the core tools do.
 
 ---
 
@@ -27,6 +28,13 @@ https://design.penpot.app/mcp/stream?userToken=YOUR_MCP_KEY
 
 Replace `YOUR_MCP_KEY` with the key from **Integrations → MCP Key**. The key travels in the query
 string, so the URL is a secret. Do not paste it into shared chats, screenshots, or commits.
+
+> **Why this matters more than a password field:** query strings routinely end up in places
+> passwords don't — client config files (that's where the installer writes it, user/global only),
+> MCP panel screenshots, HTTP/proxy logs, and shell history if you ever `curl` it. Mitigations:
+> the installer never prints or argv-passes the key and redacts it in output; you should revoke +
+> regenerate the key on any suspicion of exposure (Account → Integrations), and prefer
+> header-based auth if/when the Penpot MCP endpoint offers it.
 
 ---
 
@@ -84,7 +92,7 @@ Claude Desktop speaks MCP over stdio, so a streamable-HTTP/SSE remote endpoint i
 
 1. Paste the block, replacing `YOUR_MCP_KEY`.
 2. Fully quit and reopen Claude Desktop (config is read on launch).
-3. Confirm the `penpot` server shows connected and the four tools are listed.
+3. Confirm the `penpot` server shows connected and the four core tools are listed.
 
 > If your client natively supports streamable-HTTP / SSE MCP servers, you can point it straight at
 > the URL with no proxy. `mcp-remote` is only the bridge for stdio-only clients.

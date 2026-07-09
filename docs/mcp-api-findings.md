@@ -24,6 +24,20 @@ message so agents self-correct." They're ordered by impact on agent reliability.
 - **Third pass (sessions through 2026-06-10, incl. design.penpot.dev v2.16.0-RC10):** real build
   sessions surfaced three more — Findings 10–12 below — including one **file-corrupting** failure mode
   (variant mutation, Finding 10) and an extension of Finding 8 (`["all"]` also rejects bindings).
+- **Re-verification pass (2026-07-09, Penpot 2.17.0, remote MCP `PenpotRemotePRE`)** — ran
+  `shared/scripts/capability-probe.js` live:
+  - **Finding 8 (padding bindings): FIXED** — `applyToken(tok, ["paddingTop"])` binds and resolves
+    (`board.tokens.paddingTop` set, `flex.topPadding` = resolved value). The `["all"]` half **still
+    reproduces**: `Value not valid: Field 1 is invalid: should be a set of strings`.
+  - **Finding 11 (`applyToText` corrupt fontId): FIXED** — writes a valid id (`gfont-m-plus-2`).
+  - **NEW Finding 13 (doc bug, Med):** the 2.17 `high_level_overview` states *"Removing tokens:
+    simply set the respective property directly — token binding is automatically removed."* Live it
+    is **false**: after `board.flex.rowGap = 5` over a bound `rowGap`, the binding remains in
+    `board.tokens` (value changes, binding sticks). Recommendation: fix the overview text (or the
+    behavior) — an agent following the doc will silently leave stale bindings behind.
+  - Finding 10 (variant mutation) was **not** re-probed (destructive by nature). Positive signal:
+    2.17 ships a first-class `penpotUtils.createVariantContainer()` helper — manual re-verification
+    on a duplicated file is the next step before lifting the kit's variant restriction.
 
 Impact legend: **High** = blocks a common agent task with a confusing failure · **Med** = wastes a
 retry / is non-obvious · **Low** = cosmetic or doc-only.

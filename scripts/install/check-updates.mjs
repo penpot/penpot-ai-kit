@@ -62,17 +62,18 @@ if (upToDate) {
 
 // Stale: source moved on. Optionally count changed files via git (cheap; falls back to "content differs").
 let changed = null, currentCommit = null;
-try { currentCommit = execFileSync("git", ["-C", cloneRoot, "rev-parse", "--short", "HEAD"], { encoding: "utf8" }).trim(); } catch {}
+const quiet = { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }; // don't leak git's stderr into hook output
+try { currentCommit = execFileSync("git", ["-C", cloneRoot, "rev-parse", "--short", "HEAD"], quiet).trim(); } catch {}
 try {
   const base = provenance.sourceCommit;
   if (base) {
-    const names = execFileSync("git", ["-C", cloneRoot, "diff", "--name-only", `${base}`, "--"], { encoding: "utf8" }).trim();
+    const names = execFileSync("git", ["-C", cloneRoot, "diff", "--name-only", `${base}`, "--"], quiet).trim();
     changed = names ? names.split("\n").length : null;
   }
 } catch { /* not a git checkout or base commit gone — digest mismatch already proves staleness */ }
 
-const updateCmd = cloneRoot === KIT_SOURCE ? "node scripts/install/install-seed.mjs" : `node ${cloneRoot}/scripts/install/install-seed.mjs`;
-const line = `Penpot AI Kit: local changes not yet applied${changed ? ` (~${changed} file(s))` : ""} — run \`${updateCmd}\` to update the installed kit.`;
+const updateCmd = cloneRoot === KIT_SOURCE ? "node scripts/install/update.mjs" : `node ${cloneRoot}/scripts/install/update.mjs`;
+const line = `Penpot AI Kit: local changes not yet applied${changed ? ` (~${changed} file(s))` : ""} — run \`${updateCmd}\` to update the installed kit (re-seeds AND re-wires each installed client's skills in one step).`;
 if (hook) process.stdout.write(line + "\n");
 out({
   ok: true, installed: true, status: "updates-available", seedHome, cloneRoot,

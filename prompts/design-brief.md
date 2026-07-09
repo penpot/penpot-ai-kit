@@ -16,7 +16,9 @@ values, follows WCAG AA, and makes deliberate (not average) aesthetic decisions.
 ## Inputs
 - Sections/content (top → bottom):
 - Existing tokens & components to reuse:
-- Reference images (and what to focus on / ignore in each):
+- Visual references — **attach the images to the chat** (screenshots, moodboard, competitor UI);
+  for each one, state the focal direction: what to take from it (e.g. "the card density") and what
+  to explicitly ignore (e.g. "not the colors"). The agent is multimodal — real images beat prose.
 
 ## Constraints (inviolable)
 - Use existing components; instantiate, don't redraw.

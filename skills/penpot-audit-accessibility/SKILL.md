@@ -2,21 +2,22 @@
 name: penpot-audit-accessibility
 description: "Audit a Penpot design against WCAG 2.1/2.2 AA (optionally AAA) and produce a structured severity report: color contrast, touch/target sizes, text alternatives, heading hierarchy, and keyboard/focus order. Proposes fixes — does not auto-apply. Also serves as the Evaluator in the brief-to-screen loop. Triggers: 'check accessibility', 'accessibility audit', 'WCAG check', 'contrast audit', 'a11y review', 'check color contrast', 'is this accessible'."
 disable-model-invocation: false
-version: 0.1.0
+version: 0.2.0
 audiences: [design-system, product-designer, design-engineer, migration]
 mode-default: suggest
 requires:
   - shared/penpot-mcp-tool-reference.md
   - shared/plugin-api-gotchas.md
   - shared/naming-conventions.md
+  - shared/modes-and-policies.md
 ---
 
 # penpot-audit-accessibility — WCAG AA auditor
 
 ## 1. Title + How it works
-`penpot-audit-accessibility` inspects a design and reports accessibility issues. Four MCP tools:
-`high_level_overview` (first), `penpot_api_info` (verify signatures), `execute_code` (read structure
-and resolved styles), `export_shape` (visual evidence). It reads the object tree
+`penpot-audit-accessibility` inspects a design and reports accessibility issues. Every mutation goes
+through `execute_code` (this skill only reads); validate visually with `export_shape`; read structure
+with `penpotUtils.shapeStructure` (full tool surface: `shared/penpot-mcp-tool-reference.md`). It reads the object tree
 (`penpotUtils.shapeStructure`/`analyzeDescendants`), computes WCAG contrast from resolved fills, checks
 sizes and semantic naming, and emits a severity-ranked report. **It proposes; it does not auto-fix.**
 
@@ -30,10 +31,12 @@ Full surface: `shared/penpot-mcp-tool-reference.md`. Key calls: `execute_code` w
 `export_shape` to capture evidence for the report.
 
 ## 4. Plugin API Essentials
-- Read resolved colors from `shape.fills`/`shape.strokes` (arrays; items immutable). Text color is the Text shape's fill.
-- Get dimensions from `shape.width`/`shape.height`/`shape.bounds`.
+Gotcha numbers refer to `shared/plugin-api-gotchas.md`:
+- **#1** — read resolved colors from `shape.fills`/`shape.strokes` (arrays; items immutable). Text color is the Text shape's fill.
+- **#5** — get dimensions from `shape.width`/`shape.height`/`shape.bounds` (read-only; this skill never resizes).
 - Heading hierarchy depends on **semantic layer names** (h1…h6) — if layers are unnamed, recommend `penpot-rename-layers` first.
 - Focus/keyboard order is inferred from layout order + interactions; this is heuristic, flag as such.
+- Verify unfamiliar signatures with `penpot_api_info` before relying on them.
 
 ## 5. Token-Aware Brief Contract
 - **Context** — what's being audited (page/selection/component); product surface.
@@ -69,6 +72,8 @@ Report schema per issue:
 { severity, criterion (e.g. "1.4.3 Contrast"), element, current, required, fix, confidence }
 ```
 Plus a summary: counts by severity, pass/fail per criterion, and a handoff checklist.
+
+The final report must ALSO be emitted as a JSON object per `shared/report-schemas/accessibility-report.schema.json` — including the derived `highOrMedium` count (findings with severity High or Medium; what the `brief-to-screen` workflow branches on) — and mirrored to the run ledger.
 
 ## 9. Modes & Policies
 Default **suggest** (read-only). Any fix is delegated to the owning skill under Apply-with-review.

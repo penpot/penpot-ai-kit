@@ -1,14 +1,42 @@
 {
+  "$schema": "../../shared/pipeline.schema.json",
   "id": "brief-to-screen",
   "pattern": "evaluator-optimizer",
   "description": "Generate a screen and iterate against an accessibility evaluator until AA passes.",
   "maxIterations": 4,
   "steps": [
-    { "id": "generate", "skill": "penpot-build-screen", "inputs": ["brief", "designSystem", "viewport"], "checkpoint": true, "next": "evaluate", "on_fail": "halt" },
-    { "id": "evaluate", "skill": "penpot-audit-accessibility", "inputs": ["scope:screen"], "checkpoint": false, "next": "decide", "on_fail": "report" },
-    { "id": "decide", "type": "branch",
-      "if": "evaluate.highOrMedium == 0", "thenNext": "done",
-      "elseNext": "generate", "elseInputs": ["fixIssues:evaluate.findings"] }
+    {
+      "id": "generate",
+      "skill": "penpot-build-screen",
+      "inputs": [
+        "brief",
+        "designSystem",
+        "viewport"
+      ],
+      "checkpoint": true,
+      "next": "evaluate",
+      "on_fail": "halt"
+    },
+    {
+      "id": "evaluate",
+      "skill": "penpot-audit-accessibility",
+      "inputs": [
+        "scope:screen"
+      ],
+      "checkpoint": false,
+      "next": "decide",
+      "on_fail": "report"
+    },
+    {
+      "id": "decide",
+      "type": "branch",
+      "if": "evaluate.highOrMedium == 0",
+      "thenNext": "done",
+      "elseNext": "generate",
+      "elseInputs": [
+        "fixIssues:evaluate.findings"
+      ]
+    }
   ],
   "exit": "AA pass (no High/Medium) OR maxIterations reached -> present remaining issues",
   "output": "report: { screenId, iterations, finalA11y }"

@@ -4,9 +4,10 @@
 > development build. Choose this when you can't (or don't want to) route through `penpot.app`, or
 > when you're developing the MCP / a plugin. For the hosted SaaS path use `docs/setup-remote.md`.
 
-The local server exposes the exact same four tools as remote (`high_level_overview`,
-`penpot_api_info`, `execute_code`, `export_shape` — see `shared/penpot-mcp-tool-reference.md`).
-Only the transport and the ports change.
+The local server exposes the same four core tools as remote (`high_level_overview`,
+`penpot_api_info`, `execute_code`, `export_shape`) **plus `import_image`** (local-only — remote
+has no filesystem access). See `shared/penpot-mcp-tool-reference.md`. Otherwise only the
+transport and the ports change.
 
 ---
 

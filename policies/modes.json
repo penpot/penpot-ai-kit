@@ -12,7 +12,8 @@
     "penpot-audit-tokens": "suggest",
     "penpot-design-to-code-review": "suggest",
     "penpot-migrate": "review",
-    "penpot-rename-layers": "autofix"
+    "penpot-rename-layers": "autofix",
+    "penpot-design-md": "suggest"
   },
   "safeSet": [
     "rename an unnamed or auto-named layer to a semantic name",

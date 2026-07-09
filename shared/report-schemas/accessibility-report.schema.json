@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://penpot.app/schemas/penpot-ai-kit/accessibility-report.schema.json",
+  "title": "Accessibility audit report (penpot-audit-accessibility)",
+  "type": "object",
+  "required": ["runId", "scope", "level", "summary", "highOrMedium", "findings"],
+  "properties": {
+    "runId": { "type": "string" },
+    "scope": { "type": "string", "description": "What was audited: page/board/selection name(s) + ids." },
+    "level": { "enum": ["AA", "AAA"] },
+    "summary": {
+      "type": "object",
+      "required": ["high", "medium", "low", "pass"],
+      "properties": {
+        "high": { "type": "integer" }, "medium": { "type": "integer" },
+        "low": { "type": "integer" }, "pass": { "type": "integer" }
+      }
+    },
+    "highOrMedium": { "type": "integer", "description": "summary.high + summary.medium — the field brief-to-screen's branch condition reads." },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "severity", "wcag", "shapeId", "shapeName", "issue", "fix"],
+        "properties": {
+          "id": { "type": "string", "description": "Stable within the run, e.g. a11y-contrast-01. Reused across iterations when the same shape+criterion recurs, so reports diff cleanly." },
+          "severity": { "enum": ["High", "Medium", "Low"] },
+          "wcag": { "type": "string", "description": "Criterion, e.g. '1.4.3'." },
+          "shapeId": { "type": "string" },
+          "shapeName": { "type": "string" },
+          "issue": { "type": "string" },
+          "measured": { "type": "string", "description": "The measured value, e.g. 'contrast 3.2:1' or 'target 32x32px'." },
+          "required": { "type": "string", "description": "The threshold, e.g. '4.5:1' or '44x44px'." },
+          "fix": { "type": "string", "description": "Concrete proposed fix, naming the token to swap to when applicable." },
+          "safeSet": { "type": "boolean", "description": "true only if the fix is in the auto-apply safe set (policies/modes.json)." }
+        }
+      }
+    },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "truncation": { "type": "string", "description": "Non-empty when scope was capped/sampled — no silent truncation (AGENTS.md §12)." }
+  }
+}

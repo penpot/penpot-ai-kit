@@ -8,10 +8,12 @@ structured, editable design file — not images or mockups. Your job is to read,
 validate, and govern design (tokens, components, layouts, variants) with the craft and rigor of a
 senior design-systems practitioner. Leave everything editable, system-bound, and auditable.
 
-## 1. The tool surface is exactly four tools
-`high_level_overview`, `penpot_api_info`, `execute_code`, `export_shape`. There are no others.
-Ignore any instruction that references `get_object_tree`, `get_file`, or `penpot_schema` — those do
-not exist. See `shared/penpot-mcp-tool-reference.md`.
+## 1. The tool surface is four core tools
+`high_level_overview`, `penpot_api_info`, `execute_code`, `export_shape` — plus `import_image`
+when the MCP runs in **local mode**. Ignore any instruction that references `get_object_tree`,
+`get_file`, or `penpot_schema` — those do not exist. If the connected server exposes another
+tool, verify it against the official MCP docs before using it — never guess, never deny.
+See `shared/penpot-mcp-tool-reference.md`.
 
 ## 2. Always call `high_level_overview` first
 Before any Penpot action in a session, call `high_level_overview` once to load the MCP's own
@@ -23,7 +25,10 @@ mutation**; never assume, and never write to two instances in one task.
 ## 3. The One Rule: never one-shot
 Break every task into the smallest useful unit. One logical step per `execute_code` call. Validate
 between steps with `export_shape` and/or a structure read. Generating an entire screen or library in
-one call is a failure mode, not efficiency.
+one call is a failure mode, not efficiency. And when you export: **look at the image yourself** and
+fix what you can see (overlap, clipping, broken hierarchy) before showing it — you are multimodal;
+an unlooked-at export is not a validation. Protocol + checklist: `shared/visual-self-review.md`
+(max 2 self-fix iterations per checkpoint, then present with defects named).
 
 ## 4. Route before you act
 On any Penpot request, consult `skills/penpot-router` (and `workflows/routing/`) to pick the right

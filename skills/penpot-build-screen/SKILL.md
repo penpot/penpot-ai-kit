@@ -2,7 +2,7 @@
 name: penpot-build-screen
 description: "Design production-grade screens in Penpot from a brief, as a senior visual designer — reusing the existing design system (tokens + components) and assembling section by section, never one-shot. Use to create a screen/page/landing/dashboard from a description. NOT for translating existing code (use penpot-build-from-code). Triggers: 'design a dashboard', 'create a landing page', 'design this app screen', 'build a UI from this brief', 'design a settings page', 'mock up a screen in Penpot'."
 disable-model-invocation: false
-version: 0.1.0
+version: 0.2.0
 audiences: [product-designer]
 mode-default: review
 requires:
@@ -11,17 +11,19 @@ requires:
   - shared/tokens-schema.json
   - shared/naming-conventions.md
   - shared/state-management.md
+  - shared/modes-and-policies.md
+  - shared/visual-self-review.md
 ---
 
 # penpot-build-screen — brief to on-system screen
 
 ## 1. Title + How it works
-`penpot-build-screen` turns a brief into a crafted, on-system screen. Four MCP tools:
-`high_level_overview` (first), `penpot_api_info` (verify signatures), `execute_code` (only mutation
-path; `penpot`/`penpotUtils`/`storage`), `export_shape` (visual checkpoint). It first discovers the
-existing design system (tokens + components via `penpot-foundations` / the local library), then builds
-the screen **section by section** inside flex Boards, binding tokens and reusing components — never
-generating an entire screen in one call.
+`penpot-build-screen` turns a brief into a crafted, on-system screen; every mutation goes through
+`execute_code`; validate visually with `export_shape`; read structure with
+`penpotUtils.shapeStructure` (full tool surface: `shared/penpot-mcp-tool-reference.md`). It first
+discovers the existing design system (tokens + components via `penpot-foundations` / the local
+library), then builds the screen **section by section** inside flex Boards, binding tokens and reusing
+components — never generating an entire screen in one call.
 
 ## 2. The One Rule That Matters Most
 **Reuse the system; build incrementally.** Prefer existing components and semantic tokens over raw
@@ -34,11 +36,14 @@ for the screen and sections; `penpot.library.local.components` + `comp.instance(
 `shape.applyToken` for token binding; `export_shape('selection'|'page')` at checkpoints.
 
 ## 4. Plugin API Essentials
+Gotcha numbers refer to `shared/plugin-api-gotchas.md`.
 - Screen and sections are **Boards** with flex layout; compose with append order + gaps + align/justify.
 - Reuse components via `component.instance()`; don't redraw system parts as raw shapes.
-- Text auto-sizing: set `growType` to `auto-width`/`auto-height` (remember `resize()` forces `fixed`).
-- Flex overrides child x/y; use `layoutChild` for stretch/margins.
+- **#3 text auto-sizing** — set `growType` to `auto-width`/`auto-height` AFTER any `resize()` (which forces `fixed`).
+- **#4 flex overrides child x/y** — use `layoutChild` for stretch/margins.
 - Bind colors/spacing/radius/type to **semantic tokens**, never hardcoded.
+- **#11 every new Board is born with an OPAQUE WHITE fill — this skill's critical failure mode.** `createBoard()` ships `fills = [{ fillColor: "#FFFFFF", fillOpacity: 1 }]`; left in place, a structural wrapper's square white corners poke out behind rounded children (radius looks broken), and layout boards keeping the literal white never flip in dark mode (no token, off-system). **Fill policy:** decide per board — a **structural** board (layout-only chrome: sections, rows, wrappers) gets `board.fills = []`; a **surface** (screen bg, card, sheet, button) binds a `color.bg.*` token, never a literal. Default layout containers to transparent (`shared/modes-and-policies.md`).
+- Verify unfamiliar signatures with `penpot_api_info` first.
 
 ## 5. Token-Aware Brief Contract
 - **Context** — product, audience, platform, brand mood.
@@ -50,6 +55,12 @@ for the screen and sections; `penpot.library.local.components` + `comp.instance(
 Act as a **senior product/visual designer** who makes deliberate aesthetic decisions, not generic ones.
 
 ## 6. Mandatory Workflow
+
+> **Visual self-review (mandatory):** before every ✋ checkpoint that shows visual work,
+> run the export → look → fix loop from `shared/visual-self-review.md` — export the unit you
+> just built, inspect the image yourself against the checklist, fix visible defects (max 2
+> iterations), and present that same export with any remaining defects named.
+
 **Phase 0 — Discovery.** `high_level_overview`; inventory tokens/components (`scripts/setupOrReuseSystem.js`); analyze the brief (`references/01-brief-analysis.md`); pick a style profile (`references/02-style-profiles.md`). ✋ Checkpoint: confirm brief + style + section list.
 
 **Phase 1 — Frame.** Create the screen Board with flex (`scripts/setupOrReuseSystem.js` returns ids). Set viewport size. ✋ Checkpoint.

@@ -2,7 +2,7 @@
 name: penpot-design-to-code-review
 description: "Review a Penpot design against its implemented code (a source component or Storybook story) and emit a structured DRIFT report. Use when an engineer needs to confirm the build matches the design: extract HTML/CSS from a selection, map its tokens/structure/states to the code component, diff them, and list what each side is missing with severity and a reconciliation. Degrades gracefully to a design-system-token check when no code source is supplied. Triggers: 'design to code review', 'does my code match the design', 'design code parity', 'compare Penpot to my component', 'check this against Storybook', 'extract HTML/CSS from this selection', 'find design drift', 'design implementation diff'."
 disable-model-invocation: false
-version: 0.1.0
+version: 0.2.0
 audiences: [design-engineer]
 mode-default: suggest
 requires:
@@ -11,21 +11,23 @@ requires:
   - shared/tokens-schema.json
   - shared/naming-conventions.md
   - shared/state-management.md
+  - shared/modes-and-policies.md
 ---
 
 # penpot-design-to-code-review — Close the design↔code bridge in the READ direction
 
-**How it works.** This skill reads a Penpot selection and compares it to the engineer's implemented code, then reports the drift. It uses the four Penpot MCP tools and nothing else: call `high_level_overview` once at the start of the session; read structure with `penpotUtils.shapeStructure` and tokens with `penpotUtils.tokenOverview`; extract the design's HTML/CSS with `penpot.generateMarkup(shapes, opts)` and `penpot.generateStyle(shapes, opts)` (both invoked **through** `execute_code` — the only execution path); and produce a visual for side-by-side comparison with the separate `export_shape` tool. This skill is **read-only on the canvas** by default (`mode: suggest`) — it never mutates the design; it emits a report and, only on explicit request, proposes reconciliation steps. The code side (a React/Vue/etc. component file, or a rendered Storybook story / its DOM+CSS) is **supplied by the user or by another MCP** (filesystem, Storybook, a browser tool). If no code source is available, the skill degrades gracefully and compares the selection against the design-system tokens instead.
+## 1. Title + How it works
+This skill reads a Penpot selection and compares it to the engineer's implemented code, then reports the drift. Every mutation goes through `execute_code`; validate visually with `export_shape`; read structure with `penpotUtils.shapeStructure` (full tool surface: `shared/penpot-mcp-tool-reference.md`). It reads tokens with `penpotUtils.tokenOverview`, extracts the design's HTML/CSS with `penpot.generateMarkup(shapes, opts)` and `penpot.generateStyle(shapes, opts)` (both invoked **through** `execute_code`), and produces a visual for side-by-side comparison with the separate `export_shape` tool. This skill is **read-only on the canvas** by default (`mode: suggest`) — it never mutates the design; it emits a report and, only on explicit request, proposes reconciliation steps. The code side (a React/Vue/etc. component file, or a rendered Storybook story / its DOM+CSS) is **supplied by the user or by another MCP** (filesystem, Storybook, a browser tool). If no code source is available, the skill degrades gracefully and compares the selection against the design-system tokens instead.
 
 ---
 
-## 1. The One Rule That Matters Most
+## 2. The One Rule That Matters Most
 
-**Never one-shot a review, and never mutate during one.** Extract → normalize → map → diff → report, one logical `execute_code` call per step, with a read or `export_shape` between phases. A drift report that was assembled in a single blast is unverifiable and almost always wrong about token names. This is a `suggest`-mode skill: the canvas is not touched. The only thing you produce is a structured DRIFT report; reconciliation edits, if requested, are handed off to a write-capable skill (`penpot-infer-tokens`, `penpot-rename-layers`, or `penpot-generate-design`) under their own checkpoints.
+**Never one-shot a review, and never mutate during one.** Extract → normalize → map → diff → report, one logical `execute_code` call per step, with a read or `export_shape` between phases. A drift report that was assembled in a single blast is unverifiable and almost always wrong about token names. This is a `suggest`-mode skill: the canvas is not touched. The only thing you produce is a structured DRIFT report; reconciliation edits, if requested, are handed off to a write-capable skill (`penpot-foundations` for token work, `penpot-rename-layers`, or `penpot-build-from-code` for structural rebuilds) under their own checkpoints.
 
 ---
 
-## 2. Penpot MCP Tool Reference
+## 3. Penpot MCP Tool Reference
 
 Full surface: see `shared/penpot-mcp-tool-reference.md`. The calls this skill leans on:
 
@@ -39,28 +41,23 @@ Full surface: see `shared/penpot-mcp-tool-reference.md`. The calls this skill le
 | Generate the design's CSS | `penpot.generateStyle(shapes, opts)` |
 | Inspect a shape's bound tokens | `shape.tokens` (map of property → token) |
 | Inspect raw style values | `shape.fills`, `shape.strokes`, `shape.shadows`, `shape.borderRadius`, geometry via `shape.width`/`height`/`bounds` |
-| Produce a comparison image | `export_shape` (**separate MCP tool**, not JS): `shapeId`/`'selection'`, `format` `png`\|`svg`, `mode` `shape`\|`fill` |
+| Produce a comparison image | `export_shape` (**separate MCP tool**, not JS) — one call per state board |
 
 Verify any unfamiliar signature with `penpot_api_info` (e.g. `penpot_api_info("Page", "generateMarkup")`, `penpot_api_info("Shape", "tokens")`) before relying on it.
 
 ---
 
-## 3. Plugin API Essentials
+## 4. Plugin API Essentials
 
-Globals inside `execute_code`: `penpot`, `penpotUtils`, `storage`. Full traps in `shared/plugin-api-gotchas.md`. The ones that bite **this** skill:
+Gotcha numbers refer to `shared/plugin-api-gotchas.md`. What bites **this** skill:
 
 - **`generateMarkup` / `generateStyle` take an array of shapes**, not a single shape, and accept an `opts` object. Confirm the exact `opts` keys with `penpot_api_info("Penpot", "generateMarkup")` / `("Penpot", "generateStyle")` before passing options — guessing option names silently produces default output and you will wrongly conclude "no drift". Pass `penpot.selection` (already an array) directly.
-- **Style arrays are read-only item-by-item.** When reading, that's fine; never attempt to "fix" a fill here — this skill does not mutate. Read `shape.fills[0].fillColor`, etc.
-- **`width`/`height` are read-only; `parentX`/`parentY` are read-only.** Read geometry for the diff; do not call `resize()` / `setParentXY()` here.
-- **Token application is async (~100 ms).** Not relevant to reading, but if a reconciliation hand-off applies a token, do not read it back in the same call — that's the downstream skill's problem, noted so you don't assert false failures.
+- **#1 Style arrays are immutable item-by-item** — fine for reading (`shape.fills[0].fillColor`); never attempt to "fix" a fill here — this skill does not mutate.
+- **#5 `width`/`height`/`parentX`/`parentY` are read-only** — read geometry for the diff; no `resize()`/`setParentXY()` here.
+- **#2 Token application is async (~100 ms)** — irrelevant to reading, but if a reconciliation hand-off applies a token, do not read it back in the same call (don't assert false failures).
 - **`shape.tokens`** is the authoritative map of which design tokens are bound to which properties. Prefer it over guessing tokens from raw hex. A raw value with **no** bound token is itself a drift finding ("design uses a hardcoded value, not a token").
 - **`generateStyle` emits the design's notion of CSS** — it does not know your code's class names or variables. Treat its output as the design's *intent*, then normalize both sides (see `references/04`) before diffing. Do not string-compare raw CSS.
-
----
-
-## 4. (intentionally merged — see §3) Verify-don't-guess
-
-When `generateMarkup`/`generateStyle` return something unexpected, the first hypothesis is a wrong `opts` key or a non-array argument — re-check with `penpot_api_info`, not a retry with a different guess.
+- **Verify, don't guess.** When `generateMarkup`/`generateStyle` return something unexpected, the first hypothesis is a wrong `opts` key or a non-array argument — re-check with `penpot_api_info`, not a retry with a different guess.
 
 ---
 
@@ -167,6 +164,8 @@ Before extracting anything, restate the request as a contract. **Act as a senior
 }
 ```
 
+This shape is formalized in `shared/report-schemas/drift-report.schema.json`; include the derived top-level `drift` count (= `summary.drift + summary.designOnly + summary.codeOnly`), which the `code-to-penpot-sync` workflow branches on.
+
 **Severity rubric:**
 
 | Severity | Definition |
@@ -181,7 +180,7 @@ Before extracting anything, restate the request as a contract. **Act as a senior
 
 ## 9. Modes & Policies
 
-See `shared/modes-and-policies.md`. This skill is **`suggest`** by default and **stays there** — it is an audit. It auto-applies **nothing** to the canvas. There is no safe-set for this skill because it performs no mutations; the "output" is the report. If the user asks to fix drift, the skill explicitly hands off: token swaps → `penpot-infer-tokens` (`apply-with-review`), layer naming → `penpot-rename-layers`, structural/geometry changes → `penpot-generate-design`. Each reconciliation is presented as a proposal with the source-of-truth side named; nothing is changed without that downstream skill's checkpoint.
+See `shared/modes-and-policies.md`. This skill is **`suggest`** by default and **stays there** — it is an audit. It auto-applies **nothing** to the canvas. There is no safe-set for this skill because it performs no mutations; the "output" is the report. If the user asks to fix drift, the skill explicitly hands off: token swaps → `penpot-foundations` (`apply-with-review`), layer naming → `penpot-rename-layers`, structural/geometry changes → `penpot-build-from-code`. Each reconciliation is presented as a proposal with the source-of-truth side named; nothing is changed without that downstream skill's checkpoint.
 
 ---
 
@@ -225,7 +224,7 @@ See `shared/naming-conventions.md`. This skill **reads** names; it relies on the
 | "Hex matches the code, so this property passes." | A matching hex with **no bound token** still breaks theming and governance — it silently won't switch in dark mode. | Read `shape.tokens`. If no token is bound, emit a `Minor` "value not tokenized" finding even when the hex matches. |
 | "No Storybook/code was given, so I can't review." | The skill is required to degrade gracefully. | Switch to design-system-token mode: diff the selection against `tokenOverview()`, mark `codeSource: "none"` in the report header, and report only design-side findings. |
 | "generateStyle came back nearly empty — design has barely any styling." | Far more likely you passed a single shape instead of the array, or a wrong `opts` key. | Re-check: pass `penpot.selection` (an array); verify `opts` with `penpot_api_info`. Re-extract before concluding "no drift." |
-| "I'll just fix the token mismatch in Penpot while I'm here." | This is a `suggest`-mode read-only skill; mutating breaks the contract and skips the downstream checkpoint. | Do not mutate. Emit the reconciliation as a proposal and hand off to `penpot-infer-tokens`/`penpot-generate-design`. |
+| "I'll just fix the token mismatch in Penpot while I'm here." | This is a `suggest`-mode read-only skill; mutating breaks the contract and skips the downstream checkpoint. | Do not mutate. Emit the reconciliation as a proposal and hand off to `penpot-foundations`/`penpot-build-from-code`. |
 | "Spacing is 18px in both, so it matches — pass." | 18 is off the 4px grid; matching code does not make it correct. | Flag any non-multiple-of-4 spacing as a finding (`grid4px:false`) regardless of code agreement; suggest the nearest grid token. |
 
 ---
@@ -265,7 +264,7 @@ return { rawValue: target, suggestedToken: hit ? hit.name : null };
 - `penpot_api_info("Penpot", "generateMarkup")` and `("Penpot", "generateStyle")` — confirm `opts` keys before Phase 1.
 - `penpot_api_info("Shape", "tokens")` — confirm the bound-token map shape.
 - `penpot_api_info("Page", "shapeStructure")` / `penpotUtils` — structure read.
-- `shared/penpot-mcp-tool-reference.md` — the four tools and globals.
+- `shared/penpot-mcp-tool-reference.md` — the tool surface and globals.
 - `shared/plugin-api-gotchas.md` — immutable arrays, async tokens, read-only geometry.
 - `shared/tokens-schema.json` — token type strings, tiers, 4px grid rule.
 - W3C WCAG 1.4.3 (contrast) for color-drift severity escalation.

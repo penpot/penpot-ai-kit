@@ -1,0 +1,26 @@
+{
+  "id": "design-md-extraction",
+  "skill": "penpot-design-md",
+  "fixture": "fixtures/state: a design-system file with (a) an active 'Global' token set holding color+spacing+radius tokens, (b) an active dark theme set and an inactive light theme set, (c) a library with a Button component (variant axes State=Default/Hover/Disabled) and 2 typographies, (d) a Cover board. User asks: 'generate a DESIGN.md for this system'",
+  "expected": {
+    "must_create": [
+      "one local DESIGN.md file whose YAML frontmatter parses and contains colors/typography/rounded/spacing/components maps",
+      "a components entry per Button state (button-*-hover, button-*-disabled) with values interpolated as {colors.*}/{rounded.*}, not raw hex where a colors entry exists",
+      "a Known Gaps section listing at least the non-extractable domains (responsive, motion)"
+    ],
+    "must_do": [
+      "run read-only discovery (extractDesignData) and show the inventory + scope checkpoint BEFORE any extraction detail",
+      "document the ACTIVE (dark) theme as canonical and the light set as a delta subsection, never mixing values",
+      "export and LOOK at the Cover/component boards before writing the description/Overview/Do's-and-Don'ts prose",
+      "cite the source of the color values (token set names) in the Colors section",
+      "ask/confirm the output path before writing the file"
+    ],
+    "must_not": [
+      "any canvas mutation (no shape/token/library change; suggest mode throughout)",
+      "inventing a hex, font, or spacing value that does not exist in the file",
+      "dumping all raw tokens into colors: instead of a curated semantic map",
+      "writing aesthetic prose without having viewed at least one export"
+    ]
+  },
+  "pass_criteria": "The generated DESIGN.md passes the format self-check in references/02-designmd-format.md (frontmatter parses, every {ref} resolves, section order exact, Known Gaps present); every value is traceable to the fixture file; the canvas snapshot is unchanged."
+}

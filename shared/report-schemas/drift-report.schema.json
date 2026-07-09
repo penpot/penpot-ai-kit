@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://penpot.app/schemas/penpot-ai-kit/drift-report.schema.json",
+  "title": "Design-to-code DRIFT report (penpot-design-to-code-review)",
+  "description": "Formalizes the report shape documented in skills/penpot-design-to-code-review/SKILL.md §8.",
+  "type": "object",
+  "required": ["runId", "scope", "codeSource", "summary", "drift", "findings", "stateMatrix"],
+  "properties": {
+    "runId": { "type": "string" },
+    "scope": { "type": "string" },
+    "codeSource": { "enum": ["file", "storybook", "none"] },
+    "authoritative": { "type": "object", "description": "Which side is the spec per dimension, e.g. { visual: 'design', behavior: 'code' }." },
+    "rootPxAssumption": { "type": "number" },
+    "summary": {
+      "type": "object",
+      "required": ["match", "drift", "codeOnly", "designOnly", "critical", "major", "minor"],
+      "properties": {
+        "match": { "type": "integer" }, "drift": { "type": "integer" },
+        "codeOnly": { "type": "integer" }, "designOnly": { "type": "integer" },
+        "critical": { "type": "integer" }, "major": { "type": "integer" }, "minor": { "type": "integer" }
+      }
+    },
+    "drift": { "type": "integer", "description": "summary.drift + summary.designOnly + summary.codeOnly — the field code-to-penpot-sync's branch condition reads." },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "dimension", "status", "severity", "reconciliation"],
+        "properties": {
+          "id": { "type": "string" },
+          "dimension": { "enum": ["color", "spacing", "typography", "radius", "structure", "state"] },
+          "designNode": { "type": ["string", "null"] },
+          "codeElement": { "type": ["string", "null"] },
+          "designValue": { "type": ["string", "null"] },
+          "codeValue": { "type": ["string", "null"] },
+          "token": { "type": ["string", "null"] },
+          "status": { "enum": ["match", "drift", "design-only", "code-only"] },
+          "delta": { "type": ["string", "null"] },
+          "grid4px": { "type": ["boolean", "null"] },
+          "wcag": { "type": ["string", "null"] },
+          "severity": { "enum": ["Critical", "Major", "Minor"] },
+          "reconciliation": { "type": "string" }
+        }
+      }
+    },
+    "stateMatrix": {
+      "type": "object",
+      "properties": {
+        "design": { "type": "array", "items": { "type": "string" } },
+        "code": { "type": "array", "items": { "type": "string" } },
+        "cells": { "type": "array", "items": { "type": "object", "properties": { "state": { "type": "string" }, "design": { "type": "boolean" }, "code": { "type": "boolean" } } } }
+      }
+    },
+    "notes": { "type": "array", "items": { "type": "string" } }
+  }
+}

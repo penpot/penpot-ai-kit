@@ -2,7 +2,7 @@
 name: penpot-component-factory
 description: "Build and maintain Penpot components with COMPLETE variant matrices — sizes, hierarchies, and all interactive states (default/hover/pressed/focus/disabled) — fully tokenized and correctly named. Use to create a new component with variants, fill in missing states, or normalize an existing component. Triggers: 'create a Button component with variants', 'build component variants', 'add hover/pressed/disabled states', 'make a variant matrix', 'turn this into a component with sizes', 'normalize this component'."
 disable-model-invocation: false
-version: 0.1.0
+version: 0.2.0
 audiences: [design-system, product-designer]
 mode-default: review
 requires:
@@ -11,14 +11,16 @@ requires:
   - shared/tokens-schema.json
   - shared/naming-conventions.md
   - shared/state-management.md
+  - shared/modes-and-policies.md
+  - shared/visual-self-review.md
 ---
 
 # penpot-component-factory — complete, tokenized variants
 
 ## 1. Title + How it works
-`penpot-component-factory` builds components and their **full variant matrices**. The Penpot MCP has
-four tools — `high_level_overview` (first), `penpot_api_info` (verify signatures), `execute_code`
-(only mutation path; `penpot`/`penpotUtils`/`storage` in scope), `export_shape` (visual validation).
+`penpot-component-factory` builds components and their **full variant matrices**; every mutation goes
+through `execute_code`; validate visually with `export_shape`; read structure with
+`penpotUtils.shapeStructure` (full tool surface: `shared/penpot-mcp-tool-reference.md`).
 It builds a base component as a Board with flex layout (every value tokenized via `penpot-foundations`
 tokens), generates variants across axes, combines them into a variant container
 (`penpot.createVariantFromComponents(boards)`), and verifies completeness.
@@ -41,11 +43,14 @@ Full surface: `shared/penpot-mcp-tool-reference.md`. Key calls:
 | `export_shape` | visual checkpoint of the matrix |
 
 ## 4. Plugin API Essentials
+Gotcha numbers refer to `shared/plugin-api-gotchas.md`.
 - Build the base as a **Board** (`createBoard`, NOT `createFrame`) with `addFlexLayout()`; set `dir`, gaps, padding, `horizontalSizing`/`verticalSizing`.
-- Flex/grid **overrides child x/y** — order children by append; use `layoutChild` for per-child sizing/margins.
+- **#4 flex/grid overrides child x/y** — order children by append; use `layoutChild` for per-child sizing/margins.
 - `clone()` duplicates a shape with all properties — the basis for the variant matrix.
-- Variant containers via `penpot.createVariantFromComponents(mainInstances)` (there is no `combineAsVariants`); switch with `instance.switchVariant(pos, value)`. The `Variants` object exposes `addVariant()`, `addProperty()`, `renameProperty(pos, name)`, `variantComponents()`.
-- `detach()` before mutating an instance's internals. Verify variant API with `penpot_api_info('VariantContainer')` / `penpot_api_info('Variants')`.
+- **#9 variant API** — `penpot.createVariantFromComponents(mainInstances)` (no `combineAsVariants`); switch with `instance.switchVariant(pos, value)`.
+- **#6 detach** before mutating an instance's internals — and NEVER on a variant instance (see #12).
+- **#12 variant MUTATION corrupts the file — this skill's critical failure mode.** `setVariantProperty(pos, value)` updates the variant properties but not the variant root's internal `:variant-name`, so the file fails backend referential-integrity validation: from then on **every component-touching mutation is rejected with an HTTP 400 the plugin never surfaces** — calls hang ~30 s, the session dies, unflushed mutations roll back. The same poison applies to `addVariant()` + rename, `comp.instance()` + `detach()` on a variant, `createComponent` on a detached variant instance, and `shape.remove()` on a variant board; recovery is manual. *Reading* variants and instancing a specific variant are safe. **Safe strategy:** build each state as a standalone Board and `createComponent([board])` **one at a time**, named `Component / State`; Phase 3 (§6) carries the duplicate-file / verify-saves / fallback procedure.
+- Verify unfamiliar signatures with `penpot_api_info('VariantContainer')` / `penpot_api_info('Variants')` first.
 
 ## 5. Token-Aware Brief Contract
 - **Context** — which design system / token sets are active; component purpose.
@@ -57,6 +62,12 @@ Full surface: `shared/penpot-mcp-tool-reference.md`. Key calls:
 Act as a **senior component engineer**.
 
 ## 6. Mandatory Workflow
+
+> **Visual self-review (mandatory):** before every ✋ checkpoint that shows visual work,
+> run the export → look → fix loop from `shared/visual-self-review.md` — export the unit you
+> just built, inspect the image yourself against the checklist, fix visible defects (max 2
+> iterations), and present that same export with any remaining defects named.
+
 **Phase 0 — Discovery.** `high_level_overview`; read tokens (`tokenOverview()`) and existing components. Decide axes (`references/01-variant-axes.md`). ✋ Checkpoint: confirm the axis matrix.
 
 **Phase 1 — Base.** Build the base Board with flex layout, tokenized (`scripts/buildComponentBase.js`), then `createComponent`. ✋ Checkpoint: review base (`export_shape`).

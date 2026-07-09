@@ -2,7 +2,7 @@
 name: penpot-build-from-code
 description: "Translate an existing application page, view, or component code into a Penpot screen that is bound to the existing design system — mapping code styles onto semantic tokens and reusing library components instead of raw shapes. Use when the user has real code/markup and wants it reconstructed in Penpot, section by section, on-system. Triggers: 'build this in Penpot from code', 'turn this React/HTML/CSS into a Penpot screen', 'recreate this view in Penpot', 'port this page to Penpot', 'translate this component to Penpot bound to our tokens', 'code to Penpot'."
 disable-model-invocation: false
-version: 0.1.0
+version: 0.2.0
 audiences: [design-engineer, product-designer]
 mode-default: review
 requires:
@@ -11,12 +11,14 @@ requires:
   - shared/tokens-schema.json
   - shared/naming-conventions.md
   - shared/state-management.md
+  - shared/modes-and-policies.md
+  - shared/visual-self-review.md
 ---
 
 # Build From Code — Translate App Code into an On-System Penpot Screen
 
 ## 1. Title + How it works
-This skill takes an existing application artifact — JSX/TSX, HTML, Vue/Svelte templates, CSS/Tailwind, or a styled-components tree — and reconstructs it as an **editable, system-bound** Penpot screen. It runs on the Penpot MCP's four tools only: `high_level_overview` (call first, every session), `penpot_api_info` (verify any signature before use), `execute_code` (the **only** mutation path — runs Plugin API JS), and `export_shape` (visual validation at checkpoints). Every mutation goes through `execute_code`; you validate visually with `export_shape`; you read structure with `penpotUtils.shapeStructure`. The core move is **discover first** (Phase 0 enumerates the existing tokens and components you must map onto), then transform the code **incrementally, section by section**, mapping each CSS/style value to a semantic token and each repeated UI part to an existing library component — never hardcoding hex or off-grid spacing, never reinventing a component as a raw box.
+This skill takes an existing application artifact — JSX/TSX, HTML, Vue/Svelte templates, CSS/Tailwind, or a styled-components tree — and reconstructs it as an **editable, system-bound** Penpot screen. Every mutation goes through `execute_code`; validate visually with `export_shape`; read structure with `penpotUtils.shapeStructure` (full tool surface: `shared/penpot-mcp-tool-reference.md`). The core move is **discover first** (Phase 0 enumerates the existing tokens and components you must map onto), then transform the code **incrementally, section by section**, mapping each CSS/style value to a semantic token and each repeated UI part to an existing library component — never hardcoding hex or off-grid spacing, never reinventing a component as a raw box.
 
 ## 2. The One Rule That Matters Most
 **Never one-shot a screen, and never hardcode a value that a token already expresses.** Build the screen one section at a time (one logical `execute_code` step per call), and before you write any fill/spacing/radius/type, resolve it against the discovered token set. A code-derived `#0066FF` is not a fill — it is a lookup into the design system. If no token matches, you **propose** one and stop; you do not invent it. Translating an entire page in a single call, or pasting raw computed CSS onto shapes, is the failure mode this skill exists to prevent.
@@ -30,14 +32,14 @@ Full surface: `shared/penpot-mcp-tool-reference.md`. The calls this skill leans 
 - **Validation:** `export_shape` (separate tool call) and a `shapeStructure` read.
 
 ## 4. Plugin API Essentials
-Globals inside `execute_code`: `penpot`, `penpotUtils`, `storage`. The gotchas that bite this skill (full list: `shared/plugin-api-gotchas.md`):
-- **Immutable style arrays** — to change a fill/stroke/shadow, assign a brand-new array, never mutate `fills[0]`.
-- **Token application is async (~100 ms)** — apply a token in one `execute_code` call, verify `resolvedValue` in a **later** call, never the same one.
-- **`resize()` forces text `growType: 'fixed'`** — set `growType = 'auto-width'`/`'auto-height'` after resizing a text node if you want it to flow.
-- **Flex/grid overrides child x/y** — once a Board has flex, position children by append order + gap/padding/align/justify, not by x/y; opt out only with `child.layoutChild.absolute = true`.
-- **`width`/`height` and `parentX`/`parentY` are read-only** — use `shape.resize(w, h)` and `penpotUtils.setParentXY(shape, x, y)`.
-- **Detach before mutating an instance's internals** — never restructure an attached component instance; `detach()` first and report it.
-- **Append or it isn't on the canvas** — a created shape must be `appendChild`-ed to a container (or `penpot.currentPage.root`).
+The gotchas that bite this skill, as one-liners — full text in `shared/plugin-api-gotchas.md`:
+- **#1 Immutable style arrays** — assign a brand-new `fills`/`strokes` array; never mutate `fills[0]`.
+- **#2 Token application is async (~100 ms)** — apply in one `execute_code` call, verify `resolvedValue` in a **later** call.
+- **#3 `resize()` forces text `growType: 'fixed'`** — set `growType = 'auto-width'`/`'auto-height'` after resizing text you want to flow.
+- **#4 Flex/grid overrides child x/y** — position children by append order + gap/padding/align/justify; opt out only with `child.layoutChild.absolute = true`.
+- **#5 `width`/`height` and `parentX`/`parentY` are read-only** — use `shape.resize(w, h)` and `penpotUtils.setParentXY(shape, x, y)`.
+- **#6 Detach before mutating an instance's internals** — `detach()` first and report it.
+- **#7 Append or it isn't on the canvas** — `container.appendChild(child)` (or `penpot.currentPage.root`).
 - Verify any unfamiliar signature with `penpot_api_info(type, member)` before using it.
 
 ## 5. Token-Aware Brief Contract
@@ -50,6 +52,11 @@ Before any mutation, restate the request as this contract. Act as **a senior des
 - **Acceptance Criteria** — quantitative: ≥95% of color/spacing/radius/type values bound to tokens (validated by `validateScreen.js`); zero orphan raw values flagged; every repeated UI part that has a matching library component is an **instance**, not a shape; all spacing on the 4px grid; layer names semantic (no `Rectangle 12`).
 
 ## 6. Mandatory Workflow
+
+> **Visual self-review (mandatory):** before every ✋ checkpoint that shows visual work,
+> run the export → look → fix loop from `shared/visual-self-review.md` — export the unit you
+> just built, inspect the image yourself against the checklist, fix visible defects (max 2
+> iterations), and present that same export with any remaining defects named.
 
 ### Phase 0 — Discovery (read-only)
 **Goal:** map the existing Penpot design system so code values have somewhere to land. **No mutation.**
@@ -174,7 +181,7 @@ return { role, usedComponent: !!cat, id: node.id };
 ## 15. Reference Resources
 - `penpot_api_info("LibraryComponent")`, `penpot_api_info("Shape", "applyToken")`, `penpot_api_info("Board", "addFlexLayout")`, `penpot_api_info("Token", "resolvedValue")` — verify before use.
 - `shared/penpot-mcp-tool-reference.md` (tool surface), `shared/plugin-api-gotchas.md` (traps), `shared/tokens-schema.json` (token types/tiers), `shared/naming-conventions.md`, `shared/state-management.md`.
-- Related skills: `penpot-generate-design` (broader generate flow), `penpot-infer-tokens` (when the system lacks tokens to map onto), `penpot-audit-accessibility` (post-build contrast check).
+- Related skills: `penpot-build-screen` (brief-driven generate flow), `penpot-foundations` (when the system lacks tokens to map onto — its infer mode), `penpot-audit-accessibility` (post-build contrast check).
 
 ## 16. Supporting Files
 ### references/

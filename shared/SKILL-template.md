@@ -22,10 +22,13 @@ The `description` is what the model uses to decide activation. Make it sharp and
 
 ## Body sections (in this exact order)
 
-1. **Title + "How it works"** — one paragraph. Name the four MCP tools; state "every mutation goes through `execute_code`; validate visually with `export_shape`; read structure with `penpotUtils.shapeStructure`."
+1. **Title + "How it works"** — one paragraph on the domain. Do NOT re-enumerate the MCP tools
+   (that's `shared/penpot-mcp-tool-reference.md`'s job); one sentence suffices: "every mutation goes
+   through `execute_code`; validate visually with `export_shape`; read structure with
+   `penpotUtils.shapeStructure` (full tool surface: `shared/penpot-mcp-tool-reference.md`)."
 2. **The One Rule That Matters Most** — the single non-negotiable for this domain (usually: never one-shot; smallest useful unit; checkpoint between steps).
-3. **Penpot MCP Tool Reference** — link to `shared/penpot-mcp-tool-reference.md`; list only the domain-specific calls this skill leans on.
-4. **Plugin API Essentials** — the domain-relevant globals + the gotchas that bite here (link `shared/plugin-api-gotchas.md`). Tell the author to verify unfamiliar signatures with `penpot_api_info`.
+3. **Penpot MCP Tool Reference** — one pointer line to `shared/penpot-mcp-tool-reference.md`, then ONLY the domain-specific calls this skill leans on. Never restate the generic tool table.
+4. **Plugin API Essentials** — the gotchas that bite here as one-liners citing their number in `shared/plugin-api-gotchas.md` (e.g. "#2 async token application"). Explain a gotcha in full ONLY if it is this skill's critical failure mode (e.g. #12 for component-factory). Tell the author to verify unfamiliar signatures with `penpot_api_info`.
 5. **Token-Aware Brief Contract** — the structured brief this skill expects before mutating: **Context** (product, audience), **Objective** (single, specific), **Inputs** (frames/tokens/refs), **Constraints** (forbidden components, inviolable rules), **Acceptance Criteria** (quantitative: contrast ratios, grid, variant completeness). Assign a high-specialization role ("act as a senior design-systems engineer who never hardcodes values").
 6. **Mandatory Workflow** — phases. **Phase 0 = discovery, read-only** (`high_level_overview` then `penpotUtils.shapeStructure`/`tokenOverview`). Then Phase 1..N, each with: goal, the exact `execute_code` steps, an exit criterion, and a ✋ user checkpoint.
 7. **Critical Rules** — numbered, deterministic, testable.

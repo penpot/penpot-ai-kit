@@ -1,18 +1,59 @@
 {
-  "lockfileVersion": 1,
-  "integrity": "pending",
-  "note": "Content hashes require a tooling/CI pass (e.g. SHA-256 over each SKILL.md + resources). Not computed here because the kit is authored as content only (no git/build step). Populate 'integrity' and per-skill 'hash' fields in a later tooling pass.",
+  "lockfileVersion": 2,
+  "integrity": "sha256-16:c9fca386408e9197",
+  "note": "Per-skill hash = sha256 (16 hex) over every file in the skill dir; doctrine = shared/ + policies/ (vendored into native bundles). Regenerate with scripts/dev/update-lock.mjs; verify with --check.",
+  "doctrine": {
+    "shared": "sha256-16:4374d0c0ca1c7365",
+    "policies": "sha256-16:d0820c42ba497c04"
+  },
   "skills": {
-    "penpot-router": "0.1.0",
-    "penpot-foundations": "0.1.0",
-    "penpot-component-factory": "0.1.0",
-    "penpot-build-screen": "0.1.0",
-    "penpot-build-from-code": "0.1.0",
-    "penpot-document-handoff": "0.1.0",
-    "penpot-audit-accessibility": "0.1.0",
-    "penpot-audit-tokens": "0.1.0",
-    "penpot-design-to-code-review": "0.1.0",
-    "penpot-migrate": "0.1.0",
-    "penpot-rename-layers": "0.1.0"
+    "penpot-router": {
+      "version": "0.2.0",
+      "hash": "sha256-16:623044b12f1f2c7b"
+    },
+    "penpot-foundations": {
+      "version": "0.2.0",
+      "hash": "sha256-16:8d56a1a44330d546"
+    },
+    "penpot-component-factory": {
+      "version": "0.2.0",
+      "hash": "sha256-16:0f316e36ab103bbe"
+    },
+    "penpot-build-screen": {
+      "version": "0.2.0",
+      "hash": "sha256-16:9459de027381b6d2"
+    },
+    "penpot-build-from-code": {
+      "version": "0.2.0",
+      "hash": "sha256-16:054a9e2e4f43f0fe"
+    },
+    "penpot-document-handoff": {
+      "version": "0.2.0",
+      "hash": "sha256-16:e646a18058585635"
+    },
+    "penpot-audit-accessibility": {
+      "version": "0.2.0",
+      "hash": "sha256-16:bd63c1e117592445"
+    },
+    "penpot-audit-tokens": {
+      "version": "0.2.0",
+      "hash": "sha256-16:ab1beb7fcd2f5ce6"
+    },
+    "penpot-design-to-code-review": {
+      "version": "0.2.0",
+      "hash": "sha256-16:5da10f92e00ce072"
+    },
+    "penpot-migrate": {
+      "version": "0.2.0",
+      "hash": "sha256-16:2a5c41277ca75ce8"
+    },
+    "penpot-rename-layers": {
+      "version": "0.2.0",
+      "hash": "sha256-16:c482db0c2561abea"
+    },
+    "penpot-design-md": {
+      "version": "0.2.0",
+      "hash": "sha256-16:0fabe0533dc634b8"
+    }
   }
 }
