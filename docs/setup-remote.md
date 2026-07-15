@@ -26,8 +26,11 @@ The remote endpoint URL is:
 https://design.penpot.app/mcp/stream?userToken=YOUR_MCP_KEY
 ```
 
-Replace `YOUR_MCP_KEY` with the key from **Integrations → MCP Key**. The key travels in the query
-string, so the URL is a secret. Do not paste it into shared chats, screenshots, or commits.
+Replace `YOUR_MCP_KEY` with the key from **Integrations → MCP Key**. Make sure you substitute only
+the **key itself** — a common mistake is pasting the whole endpoint URL in place of `YOUR_MCP_KEY`,
+which nests one URL inside another and produces connection errors. (The kit's installer detects this
+and extracts the key automatically; manual edits must get it right by hand.) The key travels in the
+query string, so the URL is a secret. Do not paste it into shared chats, screenshots, or commits.
 
 > **Why this matters more than a password field:** query strings routinely end up in places
 > passwords don't — client config files (that's where the installer writes it, user/global only),

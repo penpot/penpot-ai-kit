@@ -90,6 +90,11 @@ straight to Phase 2 with `--mode none`.
 **Key hygiene (non-negotiable):** pass the key via the `PENPOT_MCP_KEY` env var (or piped stdin), **never**
 as a CLI argument, and never repeat it. The scripts redact it everywhere.
 
+**Pasted-URL tolerance:** users often paste the **full endpoint URL**
+(`https://design.penpot.app/mcp/stream?userToken=<key>`) instead of the bare key. That's fine — pass it
+through as-is; `write-mcp-config.mjs` detects the `userToken=` parameter and keeps only the key. Don't
+re-ask or trim it yourself.
+
 If the client is **Cursor or Windsurf**, their rules are per-project — ask for the **project directory**
 the user will work in (must be outside this kit). For Claude Code / Desktop / generic, the behavior is
 global and no project dir is needed.

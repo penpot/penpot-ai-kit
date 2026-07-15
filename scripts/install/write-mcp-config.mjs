@@ -33,14 +33,29 @@ const configPath = arg(argv, "config-path") || mcpConfigPath(client);
 if (!configPath) fail(`unknown client "${client}"`);
 try { assertOutsideKit(configPath); } catch (e) { fail(e.message); }
 
-async function readKey() {
-  if (mode === "local") return null;
-  if (process.env.PENPOT_MCP_KEY) return process.env.PENPOT_MCP_KEY.trim();
-  if (process.stdin.isTTY) fail("remote mode needs the MCP Key on env PENPOT_MCP_KEY or piped via stdin (never as an argument)");
-  const chunks = []; for await (const c of process.stdin) chunks.push(c);
-  const k = Buffer.concat(chunks).toString("utf8").trim();
+/**
+ * Users sometimes paste the full endpoint URL (https://…/mcp/stream?userToken=<key>) — or a
+ * "userToken=<key>" fragment — instead of the bare key. Accept all of these: strip wrapping
+ * quotes/whitespace and, when a userToken= param is present, keep only its value.
+ */
+function normalizeKey(raw) {
+  let k = raw.trim().replace(/^["'<]+|["'>]+$/g, "").trim();
+  const m = k.match(/(?:[?&]|^)userToken=([^&#\s"']+)/);
+  if (m) {
+    k = m[1];
+    if (k.includes("%")) { try { k = decodeURIComponent(k); } catch { /* keep as pasted */ } }
+  }
+  if (/^https?:\/\//i.test(k)) fail("that looks like a URL without a userToken= parameter — paste just the MCP Key (Penpot → Account → Integrations → MCP Key)");
   if (!k) fail("empty MCP Key");
   return k;
+}
+
+async function readKey() {
+  if (mode === "local") return null;
+  if (process.env.PENPOT_MCP_KEY) return normalizeKey(process.env.PENPOT_MCP_KEY);
+  if (process.stdin.isTTY) fail("remote mode needs the MCP Key on env PENPOT_MCP_KEY or piped via stdin (never as an argument)");
+  const chunks = []; for await (const c of process.stdin) chunks.push(c);
+  return normalizeKey(Buffer.concat(chunks).toString("utf8"));
 }
 const REMOTE_URL = (key) => `https://design.penpot.app/mcp/stream?userToken=${key}`;
 const LOCAL_SSE = "http://localhost:4401/sse";
