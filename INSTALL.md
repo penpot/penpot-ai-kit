@@ -17,7 +17,7 @@ sections of this same playbook — don't improvise a flow:
 | verify the connection | Phase 3 only |
 | uninstall | **Uninstall** section at the end |
 
-## Model: a disposable seed → everything else in user/global locations
+## Model: a disposable seed → global by default, project-scoped where selected
 
 This cloned folder is a **read-only seed**. Installing:
 1. **Copies the kit once** to a stable user location (`~/.penpot-ai-kit`, the "seed home"). The clone is
@@ -27,8 +27,11 @@ This cloned folder is a **read-only seed**. Installing:
 3. **Wires the behavior** per client: for **Claude Code** it installs the penpot-* skills *natively and
    self-contained* into `~/.claude/skills/` (B3 — `shared/`+`policies/` vendored into each, so they're
    auto-discovered) plus a slim `~/.claude/CLAUDE.md` pointer; for **OpenCode** it adds an `instructions`
-   pointer in `opencode.json`; for **Codex** a block in global `~/.codex/AGENTS.md`; for **Cursor/Windsurf**
-   a per-project rules file; for **Desktop/generic** an attachable instructions file. All point at the seed.
+   pointer in `opencode.json`; for **Codex** either a block in global `~/.codex/AGENTS.md` (the default)
+   or, with `--scope project`, a block in `<project>/AGENTS.md` plus self-contained native skills in
+   `<project>/.agents/skills/`; for **Cursor/Windsurf** a per-project rules file; for **Desktop/generic**
+   an attachable instructions file. Behavior pointers reference the seed; native skill bundles are
+   self-contained.
 
 The cloned repo is **never modified**, and nothing is written into it (a read-only guard enforces this).
 
@@ -59,7 +62,7 @@ The helpers live in `scripts/install/`; all accept `--dry-run` and print JSON. P
    - `install.installed === false` → fresh install; continue to Phase 1 normally.
    - `install.installed === true && upToDate` → tell the user it's **already installed** at
      `install.seedHome` (version, and the recorded installs — `manifest.installs` lists mode/MCP **per
-     client**; `manifest.lastClient` is the most recent). Don't blindly
+     client**, plus any recorded scope and target directory; `manifest.lastClient` is the most recent). Don't blindly
      reinstall — offer three choices: **update/repair** (re-run install, idempotent — refreshes the seed,
      re-wires behavior, MCP skips unless `--force`), **change client/MCP mode** (re-run with new flags),
      or **skip** (nothing to do; go to Phase 3 to verify the live bridge).
@@ -69,7 +72,7 @@ The helpers live in `scripts/install/`; all accept `--dry-run` and print JSON. P
 
 ---
 
-## Phase 1 — Two questions (+ a project dir for Cursor/Windsurf)
+## Phase 1 — Two questions (+ placement where needed)
 
 1. **Which client?** Offer the detected one as default; let them correct it or pick `generic`. If the
    user is talking to you *through* one of these, that's the target — say so and confirm.
@@ -95,9 +98,16 @@ as a CLI argument, and never repeat it. The scripts redact it everywhere.
 through as-is; `write-mcp-config.mjs` detects the `userToken=` parameter and keeps only the key. Don't
 re-ask or trim it yourself.
 
-If the client is **Cursor or Windsurf**, their rules are per-project — ask for the **project directory**
-the user will work in (must be outside this kit). For Claude Code / Desktop / generic, the behavior is
-global and no project dir is needed.
+If the client is **Codex**, ask where its behavior should be installed:
+- **Global** (default) → `--scope global`; writes the marker-bounded pointer to `~/.codex/AGENTS.md`.
+- **Project** → `--scope project --target-dir <user-project>`; requires an explicit project directory
+  outside this kit, writes the pointer to `<project>/AGENTS.md`, and installs self-contained skills in
+  `<project>/.agents/skills/` for native discovery.
+
+The Codex MCP entry remains in global `~/.codex/config.toml` in both scopes, so its key never lands in
+the project. If the client is **Cursor or Windsurf**, their rules are always per-project — ask for the
+project directory they will work in (also outside this kit). For Claude Code / Desktop / generic, no
+project directory is needed.
 
 ---
 
@@ -106,7 +116,7 @@ global and no project dir is needed.
 Dry-run first, show the user the redacted summary, then run for real on approval:
 
 ```bash
-# remote (key via env; target-dir only needed for cursor/windsurf):
+# remote (key via env; target-dir needed for cursor/windsurf and Codex project scope):
 PENPOT_MCP_KEY='<pasted-key>' node scripts/install/install.mjs --client <id> --mode remote [--target-dir <user-project>] --dry-run
 PENPOT_MCP_KEY='<pasted-key>' node scripts/install/install.mjs --client <id> --mode remote [--target-dir <user-project>]
 
@@ -115,18 +125,26 @@ node scripts/install/install.mjs --client <id> --mode local [--target-dir <user-
 
 # MCP already installed — skip MCP config (no key, no MCP write):
 node scripts/install/install.mjs --client <id> --mode none [--target-dir <user-project>]
+
+# Codex project-local behavior (works with remote/local/none; --target-dir is required):
+node scripts/install/install.mjs --client codex --mode none --scope project --target-dir <user-project>
+
+# Codex global behavior is the default (--scope global is optional):
+node scripts/install/install.mjs --client codex --mode none [--scope global]
 ```
 
 `install.mjs` chains **seed copy → MCP config → behavior → uninstall manifest** and prints one summary.
 Read its `summary` and relay it. Notes:
 - The MCP write **merges** (preserves other servers); if a `penpot` server already exists it reports
   `skipped-exists` → re-run with `--force` to update.
-- It writes the manifest to `~/.penpot-ai-kit/install-manifest.json`, **accumulating per client** —
-  re-installing for another client never erases an earlier client's record (uninstall = remove every
-  file listed under `installs`, the `penpot` MCP server entries, and the seed dir).
-- **Claude Code only:** the behavior step reports any stale `penpot-*` skills in `~/.claude/skills`
-  that are **not** part of this kit (`orphanSkills` — older generations whose overlapping trigger
-  descriptions shadow the kit's skills). Relay the list, ask the user, and on their OK re-run with
+- It writes the manifest to `~/.penpot-ai-kit/install-manifest.json`, **accumulating per client** and
+  recording Codex's `scope` and `targetDir` — re-installing for another client never erases an earlier
+  client's record. Update reuses that placement; uninstall removes the files recorded for that exact
+  scope, the `penpot` MCP server entries, and finally the seed dir when no client remains.
+- One Codex placement is tracked at a time. To switch between global/project scopes or between project
+  directories, uninstall the recorded Codex placement first so its files cannot be orphaned.
+- Native skill installs (Claude Code and project-scoped Codex) report stale `penpot-*` skills that are
+  **not** part of this kit (`orphanSkills`). Relay the list, ask the user, and on their OK re-run with
   `--prune` to remove them. Never prune without asking.
 - If it reports a guard error about writing inside the kit, you passed a `--target-dir` inside the repo —
   ask the user for their real project dir and retry.
@@ -169,6 +187,7 @@ node scripts/install/check-updates.mjs --hook    # SILENT when current; one acti
 - **Updates available** → run the one-step updater: `node scripts/install/update.mjs`. It chains
   `install-seed.mjs` (refresh the seed) **and** `install-behavior.mjs` for every client recorded in the
   manifest — so e.g. Claude Code's vendored copies in `~/.claude/skills/` never lag behind the seed.
+  Recorded Codex scope and target directory are forwarded, so a project install remains in that project.
   MCP configs are untouched (a content update never changes the key/server entry).
 - Both `check-updates.mjs` and `update.mjs` run from the clone **or** from the seed (the clone is
   resolved via the stamped `sourcePath`).
@@ -197,8 +216,9 @@ It deletes kit artifacts, strips only the kit's marker blocks from shared files 
 touch the SessionStart hook (user hooks share that file) — relay its reminder. Manual fallback
 (no manifest / auditing what it would do):
 1. Read `~/.penpot-ai-kit/install-manifest.json`. `installs` records, **per client**, the files that
-   were wired and which MCP config holds the `penpot` entry. (No manifest? Fall back to the per-client
-   locations table in `docs/clients.md` and confirm each path with the user.)
+   were wired, which MCP config holds the `penpot` entry, and any scope/target directory needed to
+   reproduce that placement. (No manifest? Fall back to the per-client locations table in
+   `docs/clients.md` and confirm each path with the user.)
 2. For each client the user wants removed: delete every path under `installs[client].files`, then
    remove the **`penpot` server entry** from its `mcpConfig` — surgically; never touch other servers
    in that file.

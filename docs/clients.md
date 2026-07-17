@@ -7,10 +7,11 @@
 
 The cloned repo is a **read-only seed**. `install-seed.mjs` copies the whole tree ONCE to
 `~/.penpot-ai-kit` (the "seed home"), so `shared/`/`policies/` relative links stay intact and the clone
-becomes disposable. Then, **into user/global locations** (never the repo, never near a project unless the
-client's rules are project-only):
+becomes disposable. Then, **into user/global locations by default**, or into an explicit project when
+the client requires or the user selects project scope:
 - the **secret MCP config** → the client's user/global config file;
-- a **behavior pointer** → the client's global rules (or the user's project dir for Cursor/Windsurf);
+- a **behavior pointer** → the client's global rules, the user's project for Cursor/Windsurf, or either
+  location for Codex according to `--scope global|project`;
 - `prompts/` → native slash-commands where supported.
 
 A read-only guard (`assertOutsideKit`) refuses any write that resolves inside the cloned repo.
@@ -24,7 +25,7 @@ A read-only guard (`assertOutsideKit`) refuses any write that resolves inside th
 | **Cursor** | `~/.cursor/mcp.json` | JSON `mcpServers` (**native HTTP** `url`) | per-project `<project>/.cursor/rules/penpot-kit.mdc` (`alwaysApply`) | `@~/.penpot-ai-kit/prompts/<name>.md` |
 | **Windsurf** | `~/.codeium/windsurf/mcp_config.json` | JSON `mcpServers` (stdio proxy) | per-project `<project>/.windsurfrules` | referenced |
 | **OpenCode** | `~/.config/opencode/opencode.json` | JSON **`mcp`** (`type:remote` url / `type:local` command) | `instructions[]` in the same `opencode.json` → seed `AGENTS.md` + router | `@<seed>/prompts/<name>.md` |
-| **Codex** (CLI + desktop App + IDE + Web) | `~/.codex/config.toml` | **TOML** `[mcp_servers.NAME]` (native HTTP `url`) | global `~/.codex/AGENTS.md` (marker-bounded pointer) | referenced |
+| **Codex** (CLI + desktop App + IDE + Web) | `~/.codex/config.toml` in both scopes | **TOML** `[mcp_servers.NAME]` (native HTTP `url`) | `--scope global` (default): `~/.codex/AGENTS.md`; `--scope project`: `<project>/AGENTS.md` + self-contained `<project>/.agents/skills/` | referenced |
 | **generic** | `~/.penpot-ai-kit/mcp.generic.json` (import into your client) | JSON `mcpServers` | `~/.penpot-ai-kit/dist/penpot-kit.instructions.md` or `AGENTS.md` | inside that file |
 
 - **Claude Code (B3):** skills are installed **natively and self-contained** — `install-behavior` copies
@@ -35,13 +36,21 @@ A read-only guard (`assertOutsideKit`) refuses any write that resolves inside th
   remove them with `--prune` after the user confirms. Convention: a SKILL.md must only reference
   files inside its own bundle (`references/`, `scripts/`) or the vendored `shared/`/`policies/` —
   never another skill's files by path (those don't resolve cross-bundle; `scripts/dev/validate-kit.mjs`
-  guards name-level references). The other clients have no skill loader → they read the seed via the pointer.
+  guards name-level references). Codex also supports native project skills: project scope installs the
+  same self-contained bundles under `<project>/.agents/skills/`. Clients without native skill placement
+  read the seed via their behavior pointer.
 - **Cursor / Windsurf** only read rules **per project** → their behavior pointer goes into the user's
   project dir (`--target-dir`, validated outside the kit). The secret MCP config still goes user/global.
 - **OpenCode** uses the `instructions` array (which *combines* with any `AGENTS.md`) instead of writing a
   global `AGENTS.md`, sidestepping a known bug where a project `AGENTS.md` shadows the global one.
-- **Codex** desktop App, CLI, IDE extension and Web all share `~/.codex/config.toml` + the AGENTS.md
-  chain, so one `codex` branch covers them. Codex caps merged AGENTS.md at ~32 KiB — keep the pointer short.
+- **Codex** accepts `--scope global|project`; global is the backward-compatible default. Project scope
+  requires an explicit `--target-dir` outside the kit and writes `<project>/AGENTS.md` plus native,
+  self-contained `<project>/.agents/skills/`. Its MCP config always remains global in
+  `~/.codex/config.toml`, keeping the key out of the project. The manifest records `scope` and
+  `targetDir`; update and uninstall reuse them instead of falling back to the current directory. The
+  manifest tracks one Codex placement, so uninstall it before switching scope or project directory.
+  Desktop App, CLI, IDE extension and Web share the config + AGENTS.md chain. Codex caps merged
+  AGENTS.md at ~32 KiB — keep the pointer short.
 
 ## Server entry shapes
 
