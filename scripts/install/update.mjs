@@ -7,7 +7,7 @@
  * skill copies in ~/.claude/skills stale. This chains both, driven by the install manifest:
  *   1. install-seed.mjs → refresh ~/.penpot-ai-kit from the clone.
  *   2. install-behavior.mjs --client <c> for each client recorded in install-manifest.json
- *      (project dir for Cursor/Windsurf is recovered from the manifest's recorded file paths).
+ *      (project dir for project-scoped clients is recovered from the manifest).
  * It never touches MCP configs (the key/server entry doesn't change on a content update).
  *
  * Usage:   node scripts/install/update.mjs [--dry-run]
@@ -15,7 +15,7 @@
  * Safe to re-run (both children are idempotent). Exit 1 if any step failed.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { kitHome, normalizeManifest, readJSON, flag } from "./lib.mjs";
@@ -31,7 +31,8 @@ const run = (script, args) => {
 };
 
 const seedHome = kitHome();
-const manifest = normalizeManifest(readJSON(join(seedHome, "install-manifest.json")));
+const manifestPath = join(seedHome, "install-manifest.json");
+const manifest = normalizeManifest(readJSON(manifestPath));
 if (!existsSync(join(seedHome, "AGENTS.md"))) {
   out({ ok: false, error: `No installed seed at ${seedHome}. Run the installer first (INSTALL.md).` });
   process.exit(1);
@@ -42,9 +43,12 @@ let seed;
 try { seed = run("install-seed.mjs", dryRun ? ["--dry-run"] : []); }
 catch (e) { out({ ok: false, error: `install-seed failed: ${e.message}` }); process.exit(1); }
 
-// 2. Re-wire each recorded client. Project-scoped clients (Cursor/Windsurf) need the project dir
-// back — recover it from the behavior file path the manifest recorded at install time.
-const projectDirFor = (client, files = []) => {
+// 2. Re-wire each recorded client. New manifests record project scope directly; legacy
+// Cursor/Windsurf records recover it from the behavior file path.
+const projectDirFor = (client, rec) => {
+  if (rec.scope === "project" && rec.targetDir) return resolve(rec.targetDir);
+  if (["cursor", "windsurf"].includes(client) && rec.targetDir) return resolve(rec.targetDir);
+  const files = rec.files || [];
   if (client === "cursor") {
     const f = files.find((p) => p.endsWith(join(".cursor", "rules", "penpot-kit.mdc")));
     return f ? resolve(f, "..", "..", "..") : null;
@@ -59,15 +63,23 @@ const projectDirFor = (client, files = []) => {
 const behaviors = [];
 for (const [client, rec] of Object.entries(manifest && manifest.installs || {})) {
   const args = ["--client", client, "--kit-path", seedHome];
-  const projectDir = projectDirFor(client, rec.files || []);
+  const scope = rec.scope || "global";
+  const projectDir = projectDirFor(client, rec);
+  if (client === "codex") args.push("--scope", scope);
   if (projectDir) args.push("--target-dir", projectDir);
   if (dryRun) args.push("--dry-run");
   try {
     const r = run("install-behavior.mjs", args);
+    if (!dryRun && r.ok) rec.files = [...new Set([...(rec.files || []), ...(r.touched || [])])];
     behaviors.push({ client, ok: !!r.ok, userAction: r.userAction || null, error: r.ok ? null : r.error || "unknown error" });
   } catch (e) {
     behaviors.push({ client, ok: false, userAction: null, error: e.message });
   }
+}
+
+if (!dryRun && manifest) {
+  const storedManifest = { kitSeed: seedHome, lastClient: manifest.lastClient, installs: manifest.installs };
+  writeFileSync(manifestPath, JSON.stringify(storedManifest, null, 2) + "\n", "utf8");
 }
 
 const ok = !!seed.ok && behaviors.every((b) => b.ok);

@@ -3,9 +3,9 @@
  *
  * Model: the cloned repo is a READ-ONLY seed. `install-seed.mjs` copies it ONCE to a stable user
  * location (kitHome, default ~/.penpot-ai-kit). Everything else (MCP secret, behavior pointers) is
- * written to the client's USER/GLOBAL locations — never into the clone, never into a project unless
- * the client only supports project-scoped rules. assertOutsideKit() enforces that the original clone
- * is never written to.
+ * written to the client's USER/GLOBAL locations — never into the clone. Project-scoped clients may
+ * opt into project instructions and native skills. assertOutsideKit() enforces that the original
+ * clone is never written to.
  */
 import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
@@ -67,8 +67,9 @@ export function mcpConfigPath(client) {
 /**
  * Where the (non-secret) behavior pointer goes per client. Global where the client has a global
  * mechanism; project-scoped (into `projectDir`, NOT the kit) where rules are only per-project.
+ * Example: behaviorTarget("codex", "/workspace", "project") returns project AGENTS + skills paths.
  */
-export function behaviorTarget(client, projectDir) {
+export function behaviorTarget(client, projectDir, scope = "global") {
   switch (client) {
     case "claude-code": // B3: native self-contained skills + a slim global memory pointer + commands
       return { kind: "claude-native", file: join(HOME, ".claude", "CLAUDE.md"),
@@ -79,8 +80,11 @@ export function behaviorTarget(client, projectDir) {
       return { kind: "rules-file-project", file: join(projectDir, ".windsurfrules") };
     case "opencode": // add an `instructions` pointer in global opencode.json (combines, dodges the AGENTS shadow bug)
       return { kind: "opencode-instructions", file: join(HOME, ".config", "opencode", "opencode.json") };
-    case "codex": // global personal instructions, read by CLI + desktop App + IDE + Web
-      return { kind: "agents-global", file: join(HOME, ".codex", "AGENTS.md") };
+    case "codex":
+      return scope === "project"
+        ? { kind: "codex-native-project", file: join(projectDir, "AGENTS.md"),
+            skillsDir: join(projectDir, ".agents", "skills") }
+        : { kind: "agents-global", file: join(HOME, ".codex", "AGENTS.md") };
     case "claude-desktop":
     case "generic":
       return { kind: "attach", file: join(kitHome(), "dist", "penpot-kit.instructions.md") };
@@ -89,7 +93,7 @@ export function behaviorTarget(client, projectDir) {
 }
 
 /**
- * B3 — build SELF-CONTAINED skill bundles for native discovery (Claude Code).
+ * Build SELF-CONTAINED skill bundles for clients with native skill discovery.
  * Each skill references shared/ and policies/ by repo-relative paths, so we vendor a copy of those two
  * folders INTO each skill dir; the existing `shared/...`/`policies/...` references then resolve within
  * the skill. The router additionally gets `workflows/` vendored (it is the only skill that routes to

@@ -10,29 +10,38 @@
  *
  * Usage:
  *   node scripts/install/install-behavior.mjs --client cursor --target-dir /abs/my-project
+ *   node scripts/install/install-behavior.mjs --client codex --scope project --target-dir /abs/my-project
  * Flags:
  *   --client claude-code|claude-desktop|cursor|windsurf|generic   (required)
  *   --kit-path <abs>    seed location (default: kitHome / ~/.penpot-ai-kit) · --target-dir <abs> (default cwd)
- *   --prune             claude-code only: remove stale penpot-* skills in ~/.claude/skills that are
- *                       not part of this kit (older generations shadow the kit's triggers). Without
- *                       it they are only reported. Ask the user before passing it.
+ *   --scope global|project  Codex behavior scope (default global; project requires --target-dir)
+ *   --prune             native skill installs only: remove stale penpot-* skills from the target
+ *                       skills dir. Without it they are only reported. Ask the user before passing it.
  *   --dry-run
  * Output: JSON { ok, client, kitPath, touched:[...], prompts:[...], orphanSkills:[...], prunedSkills:[...], userAction }.
  */
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
-import { kitHome, behaviorTarget, assertOutsideKit, buildSelfContainedSkills, findOrphanSkills, arg, flag } from "./lib.mjs";
+import { basename, dirname, join, resolve } from "node:path";
+import { KIT_SOURCE, kitHome, behaviorTarget, assertOutsideKit, buildSelfContainedSkills, findOrphanSkills, arg, flag } from "./lib.mjs";
 
 const argv = process.argv.slice(2);
 const client = arg(argv, "client");
 const dryRun = flag(argv, "dry-run");
-const prune = flag(argv, "prune"); // remove stale penpot-* skills not shipped by this kit (claude-code only)
-const targetDir = arg(argv, "target-dir", process.cwd());
+const prune = flag(argv, "prune"); // remove stale penpot-* skills from native skill targets
+const requestedTargetDir = arg(argv, "target-dir", null);
+const scope = arg(argv, "scope", "global");
 const kitPath = arg(argv, "kit-path", kitHome());
 
 const out = (o) => { process.stdout.write(JSON.stringify(o, null, 2) + "\n"); };
 const fail = (m) => { out({ ok: false, error: m }); process.exit(1); };
 if (!client) fail("--client is required");
+if (!["global", "project"].includes(scope)) fail(`--scope must be global|project (got ${scope})`);
+if (client !== "codex" && scope !== "global") fail(`--scope project is only supported for codex (got ${client})`);
+if (client === "codex" && scope === "project" && !requestedTargetDir) {
+  fail("--target-dir is required for --client codex --scope project (got missing; expected a project path outside the kit)");
+}
+if (requestedTargetDir === true) fail("--target-dir requires a path value (got flag without value; expected a project path)");
+const targetDir = resolve(requestedTargetDir || process.cwd());
 const seedReady = existsSync(join(kitPath, "AGENTS.md"));
 // In a real run the seed must exist; in --dry-run we preview even before install-seed has run.
 if (!seedReady && !dryRun) fail(`--kit-path must be the installed seed (folder with AGENTS.md). Run install-seed.mjs first. Got: ${kitPath}`);
@@ -72,6 +81,20 @@ Before ANY Penpot design work:
 ${MARK_END}`;
 }
 
+function codexProjectBody(kp) {
+  return `${MARK_BEGIN}
+# Penpot AI Kit — project operating rules
+Penpot skills are installed as native, self-contained Codex skills in this project's .agents/skills directory.
+
+Before ANY Penpot design work:
+1. Read ${kp}/AGENTS.md and follow it.
+2. Your FIRST Penpot tool call each session is \`high_level_overview\` (no arguments).
+3. Let the request trigger the matching penpot-* skill; use penpot-router when it spans several skills.
+
+The MCP configuration remains in the user's global Codex config so secrets never land in this project.
+${MARK_END}`;
+}
+
 function upsertBlock(file, block) {
   assertOutsideKit(file);
   let content = existsSync(file) ? readFileSync(file, "utf8") : "";
@@ -86,7 +109,7 @@ function writeFresh(file, content) {
   return file;
 }
 
-const target = behaviorTarget(client, targetDir);
+const target = behaviorTarget(client, targetDir, scope);
 if (!target) fail(`unknown client "${client}"`);
 // For project-scoped clients (Cursor/Windsurf), the rules file lands in --target-dir. Fail cleanly and
 // early if that resolves inside the kit (the agent should ask the user for their project dir instead).
@@ -96,9 +119,22 @@ try { assertOutsideKit(target.file); } catch (e) {
 
 const touched = [];
 const promptsCopied = [];
+const nativeSkillSource = seedReady ? kitPath : KIT_SOURCE;
 let userAction = null;
 let orphanSkills = [];   // stale penpot-* skills detected but NOT removed (need --prune + user OK)
 let prunedSkills = [];   // stale penpot-* skills removed because --prune was passed
+
+function applyOrphanSkillPolicy(skillsDir) {
+  const orphans = findOrphanSkills(nativeSkillSource, skillsDir);
+  if (!orphans.length) return "";
+  if (!prune) {
+    orphanSkills = orphans;
+    return ` WARNING: ${orphans.length} stale penpot-* skill(s) in ${skillsDir} are NOT part of this kit (${orphans.join(", ")}) — confirm with the user, then re-run with --prune to remove them.`;
+  }
+  if (!dryRun) for (const orphan of orphans) rmSync(join(skillsDir, orphan), { recursive: true, force: true });
+  prunedSkills = orphans;
+  return ` Pruned ${orphans.length} stale penpot-* skill(s): ${orphans.join(", ")}.`;
+}
 
 function copyPromptsAsCommands(cmdDir) {
   assertOutsideKit(cmdDir);
@@ -114,24 +150,22 @@ function copyPromptsAsCommands(cmdDir) {
 
 switch (target.kind) {
   case "claude-native": { // B3: native self-contained skills + slim global memory pointer + commands
-    const r = buildSelfContainedSkills(kitPath, target.skillsDir, { dryRun });
+    const r = buildSelfContainedSkills(nativeSkillSource, target.skillsDir, { dryRun });
     for (const s of r.skills) touched.push(join(target.skillsDir, s));
     touched.push(upsertBlock(target.file, claudeNativeBody(kitPath)));
     copyPromptsAsCommands(target.commandsDir);
     userAction = `Restart Claude Code. ${r.skills.length} penpot-* skills installed NATIVELY in ~/.claude/skills (self-contained — shared/ + policies/ vendored into each; workflows/ vendored into penpot-router), plus /penpot-* commands and a slim global ~/.claude/CLAUDE.md pointer. Skills are auto-discovered by description.`;
     // Stale penpot-* skills from older kit generations shadow these (overlapping trigger descriptions).
     // Report them always; delete only with --prune (the agent must confirm with the user first).
-    const orphans = findOrphanSkills(kitPath, target.skillsDir);
-    if (orphans.length) {
-      if (prune) {
-        if (!dryRun) for (const o of orphans) rmSync(join(target.skillsDir, o), { recursive: true, force: true });
-        prunedSkills = orphans;
-        userAction += ` Pruned ${orphans.length} stale penpot-* skill(s) not shipped by this kit: ${orphans.join(", ")}.`;
-      } else {
-        orphanSkills = orphans;
-        userAction += ` WARNING: ${orphans.length} stale penpot-* skill(s) in ${target.skillsDir} are NOT part of this kit (${orphans.join(", ")}) — they overlap the kit's triggers and can shadow it. Confirm with the user, then re-run with --prune to remove them.`;
-      }
-    }
+    userAction += applyOrphanSkillPolicy(target.skillsDir);
+    break;
+  }
+  case "codex-native-project": {
+    const r = buildSelfContainedSkills(nativeSkillSource, target.skillsDir, { dryRun });
+    for (const skill of r.skills) touched.push(join(target.skillsDir, skill));
+    touched.push(upsertBlock(target.file, codexProjectBody(kitPath)));
+    userAction = `Restart Codex in ${targetDir}. ${r.skills.length} penpot-* skills are installed natively in .agents/skills and the project rules are in AGENTS.md. Other projects are unaffected.`;
+    userAction += applyOrphanSkillPolicy(target.skillsDir);
     break;
   }
   case "opencode-instructions": { // OpenCode: add an `instructions` pointer in global opencode.json
@@ -175,4 +209,5 @@ switch (target.kind) {
   default: fail(`unhandled behavior kind "${target.kind}"`);
 }
 
-out({ ok: true, client, kitPath, targetDir, dryRun: !!dryRun, touched, prompts: promptsCopied, orphanSkills, prunedSkills, userAction });
+const projectScoped = ["codex-native-project", "rules-mdc-project", "rules-file-project"].includes(target.kind);
+out({ ok: true, client, scope, kitPath, targetDir: projectScoped ? targetDir : null, dryRun: !!dryRun, touched, prompts: promptsCopied, orphanSkills, prunedSkills, userAction });
