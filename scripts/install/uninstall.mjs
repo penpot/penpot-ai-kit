@@ -50,7 +50,8 @@ function planFiles(client, rec) {
   for (const f of rec.files || []) {
     if (!existsSync(f)) continue;
     if (isInsideSeed(f)) continue; // seed handled at the end
-    if (f === rec.mcpConfig) continue; // MCP entries are edited surgically below; never delete the config file
+    // OpenCode shares one file for behavior + MCP, so its instructions still need the edit-json plan.
+    if (f === rec.mcpConfig && client !== "opencode") continue;
     const stat = statSync(f);
     if (stat.isDirectory()) { note("delete", f, "kit artifact (directory)"); continue; }
     const text = readFileSync(f, "utf8");

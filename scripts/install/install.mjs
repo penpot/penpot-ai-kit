@@ -110,9 +110,13 @@ const manifestPath = join(kit, "install-manifest.json");
 const prev = readJSON(manifestPath);
 const installs = (prev && prev.installs)
   || (prev && prev.client ? { [prev.client]: { mode: prev.mode, files: prev.files, mcpServer: prev.mcpServer, mcpConfig: prev.mcpConfig } } : {});
+const previousInstall = installs[client] || {};
+const mcpWasWritten = !["skipped", "skipped-exists"].includes(mcp.action);
+const ownedMcpServer = mcpWasWritten ? (mcp.server || "penpot") : (previousInstall.mcpServer || null);
+const ownedMcpConfig = mcpWasWritten ? (mcp.configPath || null) : (previousInstall.mcpConfig || null);
 installs[client] = {
   mode, files, scope: client === "codex" ? scope : undefined, targetDir: behavior.targetDir,
-  mcpServer: mode === "none" ? null : (mcp.server || "penpot"), mcpConfig: mcp.configPath || null,
+  mcpServer: ownedMcpServer, mcpConfig: ownedMcpConfig,
 };
 const manifest = { kitSeed: kit, lastClient: client, installs };
 if (!dryRun) { mkdirSync(dirname(manifestPath), { recursive: true }); writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n", "utf8"); }
