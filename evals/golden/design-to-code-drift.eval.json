@@ -1,0 +1,18 @@
+{
+  "id": "design-to-code-drift",
+  "skill": "penpot-design-to-code-review",
+  "fixture": "fixtures/state: a Board named 'button-primary' containing a flex Board (40px height, 120px width, borderRadius=8, fill=#0066FF, text 'Submit' centered, color=#FFFFFF) with NO tokens bound (raw values everywhere). Token sets exist with color.action.primary.bg=#0066FF, color.text.inverse=#FFFFFF, radius.control=8, spacing.inset.sm=12. User supplies no code source (graceful degradation mode).",
+  "expected": {
+    "must_detect": [
+      "all four raw values (#0066FF fill, #FFFFFF text, borderRadius 8, spacing/padding) that have EXACT matching tokens available",
+      "that the button has no bound tokens (shape.tokens is empty or missing those properties)",
+      "the absence of a code source and degrade gracefully (report header states codeSource=none)"
+    ],
+    "must_not": [
+      "any canvas mutation — no shape.name, no applyToken, no resize (this is a suggest-mode audit)",
+      "claiming drift where raw hex matches a token's resolvedValue without noting the token gap",
+      "inventing a code source or fabricating a comparison side"
+    ]
+  },
+  "pass_criteria": "Drift report lists each raw-value finding with its matching token name and severity (Minor: not tokenized); summary.designOnly > 0; summary matches + codeOnly = 0; canvas snapshot is unchanged (no shape was written to)."
+}

@@ -1,0 +1,25 @@
+{
+  "id": "build-from-code-card",
+  "skill": "penpot-build-from-code",
+  "fixture": "fixtures/state: a file with an active 'primitives' token set (color.blue.500=#0066FF, spacing.4=16, borderRadius.8=8, font.size.300=16) and 'semantic' set (color.action.primary.bg={color.blue.500}, spacing.inset.md={spacing.4}, radius.control={borderRadius.8}) and a Button library component (variant axis State=Default|Hover). User provides this JSX: '<Card><h2>Welcome</h2><p>Get started with your account.</p><button>Continue</button></Card>' and says: 'Build this card in Penpot bound to our tokens.'",
+  "expected": {
+    "must_create": [
+      "a screen Board with a Card section Board inside, using column flex layout",
+      "an h2 text layer for the heading, a p text layer for the body, and a Button component instance for 'Continue'",
+      "color and spacing bound to semantic tokens (applyToken), not raw hex px values",
+      "the Continue button is a Button component instance, NOT a raw rectangle+text"
+    ],
+    "must_do": [
+      "run Phase 0 discovery (tokenOverview, library component scan) BEFORE any write",
+      "build one section per execute_code call with a checkpoint between sections",
+      "propose a new token if the code uses a value with no matching token in the system"
+    ],
+    "must_not": [
+      "one-shotting the entire card in a single execute_code call",
+      "hardcoding #0066FF, 16px, or 8px directly on shapes instead of applyToken",
+      "rewriting the button as raw shapes when the Button component exists",
+      "detach() on the Button instance without approval"
+    ]
+  },
+  "pass_criteria": "shapeStructure on the card Board shows h2, p, and a Button component instance; every fill/spacing/radius reads as a token binding (shape.tokens), not a raw value; no Shapes named 'Rectangle' remain in scope; tokenOverview shows no new tokens were silently created (only proposed)."
+}
