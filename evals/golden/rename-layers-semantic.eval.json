@@ -1,0 +1,23 @@
+{
+  "id": "rename-layers-semantic",
+  "skill": "penpot-rename-layers",
+  "fixture": "fixtures/state: a Board named 'Rectangle 1' containing: a 'Rectangle 2' child that looks like a nav bar (full-width, 64px height, at top), a 'Rectangle 3' inside it with text 'Home', a 'Group 1' that is a card grid containing 'Rectangle 4' and 'Rectangle 5', and a 'Rectangle 6' at the bottom styled as a footer. All layers have auto-generated names. No component instances (no main/copy instance detection needed).",
+  "expected": {
+    "must_create": [
+      "a rename map Phase 1 checkpoint showing before→after for every layer before any write",
+      "renamed layers: 'Rectangle 1' → 'header' or 'nav' (the top bar), 'Rectangle 2' → 'nav', 'Rectangle 3' → 'a' or 'nav-link', 'Group 1' → 'card-grid' or 'main', 'Rectangle 4/5' → 'card' or 'section', 'Rectangle 6' → 'footer'"
+    ],
+    "must_do": [
+      "run Phase 0 read-only inventory (inspectLayerStructure) BEFORE any rename write",
+      "present the full before→after rename plan grouped by bucket at the Phase 1 checkpoint",
+      "rename in batched execute_code calls (not one-shot), with a checkpoint between batches"
+    ],
+    "must_not": [
+      "renaming any layer without showing the plan first",
+      "touching geometry (no resize, no reparent, no padding change on any shape)",
+      "one-shotting all 6 renames in a single execute_code call",
+      "renaming a main component shape (none exist in fixture, but code must check)"
+    ]
+  },
+  "pass_criteria": "shapeStructure on the page confirms every layer now has a semantic HTML element or kebab-case role name; 0 layers match the auto-generated pattern; 0 geometry changes detected; no main component was renamed (none existed); rename ledger records the before-after map."
+}

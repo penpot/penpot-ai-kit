@@ -52,3 +52,8 @@ Treat a PASS as strong signal, not proof — spot-check FAILs by hand before bla
 | `a11y-contrast` | penpot-audit-accessibility | detects sub-4.5:1 text; doesn't auto-fix |
 | `token-governance` | penpot-audit-tokens | detects hardcoded + off-grid; only exact swaps auto |
 | `figma-migration-smoke` | penpot-migrate | builds IR before write; tokens+components migrated; honest gaps |
+| `design-md-extraction` | penpot-design-md | generates DESIGN.md with parsed frontmatter, curated semantic maps, Known Gaps; read-only |
+| `document-handoff` | penpot-document-handoff | annotation kit + tokens created after approval; pin-note parity; no design mutation |
+| `build-from-code-card` | penpot-build-from-code | code → on-system Board with token bindings; component instances; sectioned build |
+| `design-to-code-drift` | penpot-design-to-code-review | drift report detects untokenized values matching existing tokens; canvas not mutated |
+| `rename-layers-semantic` | penpot-rename-layers | auto-generated → semantic HTML names; plan before write; batched; no geometry touch |

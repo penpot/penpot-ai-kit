@@ -254,8 +254,12 @@ return { recorded: true };
 | `references/02-preflight-overview.md` | Phase 0 (discovery) | How to call `high_level_overview` and run the quick `shapeStructure` / `tokenOverview` reads that ground a routing decision. |
 
 ### scripts/ (paste-into-`execute_code` templates)
-None. The router performs no mutations and needs no reusable mutation templates — its only `execute_code`
-usage is the inline read-only discovery snippets in §14.
+
+| Script | Phase | Purpose |
+|--------|-------|---------|
+| `scripts/discoverState.js` | 0a | Shallow snapshot of pages, selection, and top-level structure. Read-only. |
+| `scripts/discoverTokens.js` | 0b | Check whether token sets exist and return the token overview. Read-only. |
+| `scripts/dropBreadcrumb.js` | 2 (optional) | Record the routing decision in the file via setSharedPluginData for session resume. |
 
 ### workflows/ (vendored in native installs)
 In a native Claude Code install this skill's bundle also carries `workflows/` — the six multi-skill
