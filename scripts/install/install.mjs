@@ -11,30 +11,60 @@
  *   PENPOT_MCP_KEY=... node scripts/install/install.mjs --client cursor --mode remote --target-dir /abs/project
  *   node scripts/install/install.mjs --client windsurf --mode local --dry-run
  *   node scripts/install/install.mjs --client claude-code --mode none   # user already has the Penpot MCP
- * Flags: --client (required) · --mode remote|local|none · --target-dir <abs> · --force · --prune · --dry-run
+ *   node scripts/install/install.mjs --client codex --mode none --scope project --target-dir /abs/project
+ * Flags: --client (required) · --mode remote|local|none · --scope global|project · --target-dir <abs> · --force · --prune · --dry-run
  *        (--mode none skips the MCP config step entirely; the kit still seeds + wires behavior)
- *        (--prune: claude-code only — remove stale penpot-* skills not shipped by this kit; ask first)
+ *        (--prune: native skill installs only — remove stale penpot-* skills not shipped by this kit; ask first)
  * Output: JSON { ok, steps:{seed,mcp,behavior}, manifest, summary }.
  */
 import { execFileSync } from "node:child_process";
 import { writeFileSync, mkdirSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { kitHome, readJSON, arg, flag } from "./lib.mjs";
+import { assertOutsideKit, behaviorTarget, kitHome, normalizeManifest, readJSON, arg, flag } from "./lib.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const argv = process.argv.slice(2);
 const client = arg(argv, "client");
 const mode = arg(argv, "mode", "remote");
-const targetDir = arg(argv, "target-dir", process.cwd());
+const requestedTargetDir = arg(argv, "target-dir", null);
+const scope = arg(argv, "scope", "global");
 const force = flag(argv, "force");
 const dryRun = flag(argv, "dry-run");
-const prune = flag(argv, "prune"); // forwarded to install-behavior (claude-code: remove stale penpot-* skills)
+const prune = flag(argv, "prune"); // forwarded to install-behavior for native skill targets
 
 const out = (o) => { process.stdout.write(JSON.stringify(o, null, 2) + "\n"); };
 const fail = (m) => { out({ ok: false, error: m }); process.exit(1); };
 if (!client) fail("--client is required");
 if (!["remote", "local", "none"].includes(mode)) fail(`--mode must be remote|local|none (got ${mode})`);
+if (!["global", "project"].includes(scope)) fail(`--scope must be global|project (got ${scope})`);
+if (client !== "codex" && scope !== "global") fail(`--scope project is only supported for codex (got ${client})`);
+if (client === "codex" && scope === "project" && !requestedTargetDir) {
+  fail("--target-dir is required for --client codex --scope project (got missing; expected a project path outside the kit)");
+}
+if (requestedTargetDir === true) fail("--target-dir requires a path value (got flag without value; expected a project path)");
+const targetDir = resolve(requestedTargetDir || process.cwd());
+
+function assertSafeBehaviorTarget() {
+  const target = behaviorTarget(client, targetDir, scope);
+  if (!target) return;
+  try { assertOutsideKit(target.file); }
+  catch (error) { fail(`${error.message}\nExpected --target-dir outside the kit source.`); }
+}
+
+function assertCompatibleCodexInstall() {
+  if (client !== "codex") return;
+  const manifest = normalizeManifest(readJSON(join(kitHome(), "install-manifest.json")));
+  const installed = manifest && manifest.installs.codex;
+  if (!installed) return;
+  const installedScope = installed.scope || "global";
+  const sameTarget = scope !== "project" || resolve(installed.targetDir || "") === targetDir;
+  if (installedScope === scope && sameTarget) return;
+  fail(`codex is already installed with scope=${installedScope} targetDir=${installed.targetDir || "none"}; uninstall codex before installing scope=${scope} targetDir=${scope === "project" ? targetDir : "none"}`);
+}
+
+assertSafeBehaviorTarget();
+assertCompatibleCodexInstall();
 
 function run(script, args, { passKey = false } = {}) {
   const env = { ...process.env };
@@ -65,31 +95,39 @@ if (mode === "none") {
   const mcpArgs = ["--client", client, "--mode", mode, ...common, ...(force ? ["--force"] : [])];
   mcp = run("write-mcp-config.mjs", mcpArgs, { passKey: true });
 }
+const mcpOk = !!(mcp.ok || mcp.action === "skipped" || mcp.action === "skipped-exists");
+if (!mcpOk) fail(`mcp step failed: ${mcp.error || mcp.message || "unknown error"}`);
 
 // 3) behavior (points at the seed)
-const behavior = run("install-behavior.mjs", ["--client", client, "--kit-path", kit, "--target-dir", targetDir, ...common, ...(prune ? ["--prune"] : [])]);
+const behaviorArgs = ["--client", client, "--kit-path", kit, "--scope", scope, "--target-dir", targetDir];
+const behavior = run("install-behavior.mjs", [...behaviorArgs, ...common, ...(prune ? ["--prune"] : [])]);
+if (!behavior.ok) fail(`behavior step failed: ${behavior.error || "unknown error"}`);
 
 // manifest for uninstall — MERGES per client (a re-run for another client must not erase the record
 // of what an earlier install wrote). Old single-install manifests are upgraded in place.
-const files = [...(mcp.touched || []), ...(behavior.touched || [])];
+const files = behavior.touched || [];
 const manifestPath = join(kit, "install-manifest.json");
 const prev = readJSON(manifestPath);
 const installs = (prev && prev.installs)
   || (prev && prev.client ? { [prev.client]: { mode: prev.mode, files: prev.files, mcpServer: prev.mcpServer, mcpConfig: prev.mcpConfig } } : {});
-installs[client] = { mode, files, mcpServer: mode === "none" ? null : (mcp.server || "penpot"), mcpConfig: mcp.configPath || null };
+const previousInstall = installs[client] || {};
+const mcpWasWritten = !["skipped", "skipped-exists"].includes(mcp.action);
+const ownedMcpServer = mcpWasWritten ? (mcp.server || "penpot") : (previousInstall.mcpServer || null);
+const ownedMcpConfig = mcpWasWritten ? (mcp.configPath || null) : (previousInstall.mcpConfig || null);
+installs[client] = {
+  mode, files, scope: client === "codex" ? scope : undefined, targetDir: behavior.targetDir,
+  mcpServer: ownedMcpServer, mcpConfig: ownedMcpConfig,
+};
 const manifest = { kitSeed: kit, lastClient: client, installs };
 if (!dryRun) { mkdirSync(dirname(manifestPath), { recursive: true }); writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n", "utf8"); }
 
-// "skipped" (mode none) and "skipped-exists" (server already present; needs --force) are acceptable
-// outcomes; only a hard MCP write failure makes the install not-ok.
-const mcpOk = !!(mcp.ok || mcp.action === "skipped" || mcp.action === "skipped-exists");
 out({
   ok: !!(seed.ok && behavior.ok && mcpOk),
   dryRun: !!dryRun,
   steps: { seed, mcp, behavior },
   manifest: dryRun ? manifest : manifestPath,
   summary: {
-    client, mode, seed: kit,
+    client, mode, scope: client === "codex" ? scope : null, targetDir: behavior.targetDir, seed: kit,
     mcp: mcp.action === "skipped" ? mcp.message : (mcp.ok ? `${mcp.action} → ${mcp.configPath}` : mcp.message || mcp.error),
     behavior: behavior.userAction,
     nextStep: "Open your Penpot file + the MCP plugin (keep it open), restart the client, then call high_level_overview to verify.",
