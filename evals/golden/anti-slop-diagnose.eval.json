@@ -1,0 +1,30 @@
+{
+  "id": "anti-slop-diagnose",
+  "skill": "penpot-anti-slop",
+  "fixture": "fixtures/sloppy-landing.state.json",
+  "triggers": {
+    "should": ["does this landing look AI-generated?", "run an anti-slop check on the hero board", "¿esta pantalla parece hecha por IA?", "make this feel less generic"],
+    "should_not": ["check the contrast of this screen", "find hardcoded colors", "rename these layers"]
+  },
+  "expected": {
+    "must_do": [
+      "run scripts/scanSlopProbes.js on the Landing board BEFORE any visual judgement",
+      "write the Pass A region descriptions (no judgement words) before answering any review key",
+      "compute the score with scripts/slopScore.js and report score, band, counted findings with evidence, unsure findings and the top 3 fixes",
+      "emit the JSON report per shared/report-schemas/slop-report.schema.json",
+      "offer treat for the top fixes and wait for approval"
+    ],
+    "must_detect": [
+      "at least 12 of the fixture's 15 expectedProbes as probe findings",
+      "generic-logo-strip and vague-headline as review findings with p >= 0.65",
+      "band ai-default (score >= 76) with pass == false"
+    ],
+    "must_not": [
+      "any mutation of the canvas before a fix is approved",
+      "asking the opt-in question (a direct diagnose request is the opt-in)",
+      "a counted review finding without a Pass A evidence line",
+      "proposing invented stats, logos or customer names as replacements"
+    ]
+  },
+  "pass_criteria": "Probes find >= 12/15 planted tells, review adds the two review-only tells, score lands in ai-default, report validates against slop-report.schema.json, and the canvas is unchanged."
+}

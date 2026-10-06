@@ -103,6 +103,17 @@
     },
     {
       "intent": [
+        "does this look ai-generated",
+        "anti-slop check",
+        "avoid the ai look",
+        "make it less generic",
+        "parece hecho por ia",
+        "evitar estética ia"
+      ],
+      "target": "skill:penpot-anti-slop"
+    },
+    {
+      "intent": [
         "rename layers",
         "semantic names"
       ],

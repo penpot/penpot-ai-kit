@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://penpot.app/schemas/penpot-ai-kit/slop-report.schema.json",
+  "title": "Slop report (penpot-anti-slop diagnose, shared/anti-slop.md §3)",
+  "type": "object",
+  "required": ["runId", "scope", "score", "band", "pass", "findings", "signals"],
+  "properties": {
+    "runId": { "type": "string" },
+    "scope": { "type": "string", "description": "What was diagnosed: board/page name(s) + ids, and the export the review answers cite." },
+    "listsVersion": { "type": "string", "description": "shared/anti-slop/lists.json version the probes ran with." },
+    "score": { "type": "integer", "minimum": 0, "maximum": 100, "description": "The slop score — lower is better. Branch conditions read this field." },
+    "band": { "enum": ["genuine", "mostly-genuine", "generic", "templated", "ai-default"] },
+    "pass": { "type": "boolean", "description": "score <= 35 (the workflow gate)." },
+    "points": { "type": "number", "description": "Σ weight × p over counted tells." },
+    "templateJudgement": {
+      "type": "object",
+      "properties": {
+        "value": { "type": "integer", "minimum": 0, "maximum": 4 },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "counted": { "type": "boolean" }
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "key", "source", "p", "status"],
+        "properties": {
+          "id": { "type": "string", "description": "Stable within the run, e.g. slop-violet-gradient-01; reused across iterations." },
+          "key": { "type": "string", "description": "Taxonomy key from shared/anti-slop.md §1." },
+          "weight": { "type": "integer", "minimum": 1, "maximum": 3 },
+          "source": { "enum": ["probe", "review"] },
+          "p": { "type": "number", "minimum": 0, "maximum": 1 },
+          "status": { "enum": ["present", "unsure", "absent", "inherited", "accepted"], "description": "inherited = comes from the file's tokens/components (report + propose, never swap); accepted = user explicitly asked for it (not counted)." },
+          "counted": { "type": "boolean" },
+          "region": { "type": "string", "description": "Region kind / section name where found." },
+          "shapeIds": { "type": "array", "items": { "type": "string" } },
+          "evidence": { "type": "string", "description": "Probe measurement or what in the export justifies the answer." },
+          "fix": { "type": "string" }
+        }
+      }
+    },
+    "signals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "present"],
+        "properties": {
+          "key": { "enum": ["chosen-typeface", "product-visible", "specific-copy", "own-structure", "committed-motif"] },
+          "present": { "type": "boolean" },
+          "evidence": { "type": "string" }
+        }
+      }
+    },
+    "topFixes": { "type": "array", "maxItems": 3, "items": { "type": "string" } },
+    "assumptions": { "type": "array", "items": { "type": "string" } },
+    "truncation": { "type": "string", "description": "Non-empty when scope was capped/sampled — no silent truncation (AGENTS.md §12)." }
+  }
+}

@@ -49,6 +49,9 @@ tokens, never fabricates a number, and treats every slide as a composition (not 
 - Board naming: `NN-archetype-slug` (e.g. `01-cover-launch`, `05-big-number-retention`), zero-padded, in order.
 - Build in **batches of 3–5 slides with a checkpoint** (exported preview + summary) after each; never one-shot the deck.
 - Forbidden patterns / content:
+- Avoid the generic-AI look (strict anti-slop mode, `shared/anti-slop.md`): [ ] yes  [ ] no
+  — answering here skips the agent's opt-in question; "yes" adds a direction step before styling and
+  a 0–100 slop score (must be ≤ 35) after building.
 
 ## Acceptance Criteria (quantitative)
 - Slide count matches the outline; every essential slide present; order matches the outline.

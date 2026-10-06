@@ -30,6 +30,9 @@ values, follows WCAG AA, and makes deliberate (not average) aesthetic decisions.
 - Bind colors/spacing/radius/type to semantic tokens; no hardcoded values.
 - Spacing on the 4px grid.
 - Forbidden patterns:
+- Avoid the generic-AI look (strict anti-slop mode, `shared/anti-slop.md`): [ ] yes  [ ] no
+  — answering here skips the agent's opt-in question; "yes" adds a direction step before styling and
+  a 0–100 slop score (must be ≤ 35) after building.
 
 ## Acceptance Criteria (quantitative)
 - Clear visual hierarchy; one prominent primary action.

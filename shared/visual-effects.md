@@ -17,6 +17,9 @@
   elevated" tell (`design-quality.md` §7).
 - Accent still belongs to the primary action / the one dominant element. A glow may carry the
   accent hue at low opacity; it may not out-saturate the CTA.
+- **Strict anti-slop mode** (`prefs.antiSlop === "on"`, `shared/anti-slop.md`): the atmospheric
+  budget drops to **zero** unless the brief asks for it — no glass (§3), no decorative glows, no
+  violet/indigo gradients; at most one neutral elevation level. Flat token surfaces carry the design.
 
 ## 2. Gradients
 ```js

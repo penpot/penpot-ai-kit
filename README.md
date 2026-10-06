@@ -204,6 +204,7 @@ but only trivially-safe changes (like renaming `Rectangle 12`).
 | 🔍 `penpot-audit-accessibility` | WCAG 2.1/2.2 AA audit: contrast, tap-target sizes, heading structure, focus order — with a severity-ranked report. | *“Check this screen for accessibility problems.”* |
 | 🔍 `penpot-audit-tokens` | Design-system governance: hardcoded values, off-grid spacing, orphan/duplicate tokens, detached instances. | *“Find hardcoded colors that should be tokens.”* |
 | 🔍 `penpot-design-to-code-review` | Compares the Penpot design against the real component/Storybook and reports the **drift**, side by side. | *“Does my code match this design?”* |
+| 🔍 `penpot-anti-slop` | **Opt-in** check against the generic-AI look (violet gradients, centered hero with a pill badge, three identical icon cards, emoji icons, default fonts, buzzwords…). When building, the kit asks once per file whether you want it; with *yes* it names the defaults it would reach for and picks brief-driven alternatives before styling, then scores the result 0–100 (tree probes + visual review) and loops until it's ≤ 35. On any existing design it reports the score and proposes fixes — applied only if you approve each one. | *“Does this landing look AI-generated?”* |
 | 🔍 `penpot-design-md` | Extracts a portable **DESIGN.md** spec from the file's real tokens, assets and sampled components — so humans and coding agents can reproduce the system without opening Penpot. | *“Generate a DESIGN.md for this design system.”* |
 
 ### Skills — migrate & housekeeping
@@ -239,6 +240,7 @@ precisely. In **Claude Code** they're slash commands; in other clients, open the
 | `/penpot-handoff-brief` | document-handoff | you're annotating a screen for devs and want the context card + pins pre-filled |
 | `/penpot-deck-brief` | build-deck | you want a presentation and can describe audience, occasion, outline and style |
 | `/penpot-migration-brief` | migrate | you're scoping a Figma migration (fidelity, mapping rules) |
+| `/penpot-anti-slop-check` | anti-slop | you want an existing screen or deck scored for the generic-AI look, with fixes |
 | `/penpot-audit-request` | the audits | you want a formal, scoped audit (level, exceptions, scope) |
 | `/penpot-resume-continuation` | any long run | a multi-phase run got interrupted and must resume safely |
 

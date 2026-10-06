@@ -1,0 +1,47 @@
+{
+  "_comment": "Data for shared/anti-slop.md probes. These lists age: review them every few months and bump version + reviewed. skills/penpot-anti-slop/scripts/scanSlopProbes.js embeds a copy — keep its LISTS_VERSION equal to version (scripts/dev/validate-kit.mjs checks it).",
+  "version": "2026.10.1",
+  "reviewed": "2026-10-06",
+  "fonts": {
+    "default": [
+      "Inter", "Inter Tight", "Geist", "Geist Sans", "Roboto", "Arial", "Helvetica", "Helvetica Neue",
+      "system-ui", "-apple-system", "BlinkMacSystemFont", "SF Pro", "SF Pro Display", "SF Pro Text",
+      "Segoe UI", "Open Sans", "Poppins", "Montserrat", "Lato", "Source Sans Pro", "Source Sans 3",
+      "Work Sans", "sans-serif"
+    ],
+    "trend": [
+      "Space Grotesk", "Instrument Serif", "Instrument Sans", "DM Sans", "DM Serif Display",
+      "Plus Jakarta Sans", "Outfit", "Manrope", "Satoshi", "Sora", "Bricolage Grotesque",
+      "Fraunces", "Playfair Display", "General Sans", "Cabinet Grotesk", "Clash Display", "Onest"
+    ]
+  },
+  "buzzwords": {
+    "en": [
+      "seamless", "seamlessly", "unlock", "supercharge", "elevate", "effortless", "effortlessly",
+      "revolutionize", "revolutionise", "leverage", "game-changer", "game-changing", "next-level",
+      "harness", "empower", "streamline", "cutting-edge", "robust", "all-in-one", "unleash",
+      "reimagine", "transform your", "10x", "in today's fast-paced", "skyrocket", "unparalleled",
+      "world-class", "best-in-class", "frictionless", "magic", "delightful"
+    ],
+    "es": [
+      "sin fisuras", "sin esfuerzo", "desbloquea", "potencia", "potenciar", "impulsa", "impulsar",
+      "revoluciona", "revolucionar", "lleva al siguiente nivel", "siguiente nivel", "de vanguardia",
+      "todo en uno", "transforma tu", "optimiza", "eleva", "libera", "reimagina", "sin límites",
+      "de clase mundial", "en el mundo acelerado de hoy", "mágico", "mágica"
+    ]
+  },
+  "placeholders": [
+    "lorem ipsum", "dolor sit amet", "acme inc", "acme corp", "acme", "your company", "company name",
+    "john doe", "jane doe", "john smith", "tu empresa", "nombre de la empresa", "empresa s.a.",
+    "fulano", "mengano", "juan pérez", "item 1", "elemento 1", "placeholder", "texto de ejemplo"
+  ],
+  "roundStatPattern": "^\\s*[+~]?\\d+([.,]\\d+)?\\s*(k|m|b|x|%|\\+|/7|★)\\+?\\s*$",
+  "stepPattern": "^\\s*(step|paso)?\\s*0?[1-9][.):]?\\s*$",
+  "notXButYPatterns": [
+    "\\bnot (just|only|merely) [^.,;]{1,40}[,;—-]\\s*(it'?s|it is|but)\\b",
+    "\\bisn'?t (just|only) [^.,;]{1,40}[,;—-]\\s*(it'?s|it is)\\b",
+    "\\bno (es|son) (solo|sólo|solamente|simplemente) [^.,;]{1,40}[,;—-]\\s*(es|son)\\b"
+  ],
+  "sparkleChars": ["✨", "✦", "✧", "⭐", "🌟", "💫", "⚡"],
+  "sparkleLayerNames": ["sparkle", "sparkles", "stars", "magic", "ai-star", "destello"]
+}

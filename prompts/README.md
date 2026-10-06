@@ -20,5 +20,6 @@ because each instruction acts as a contract that constrains the model and mitiga
 | `component-spec.md` | a component + its variant axes (drives `penpot-component-factory`) |
 | `handoff-brief.md` | annotate a design for handoff (drives `penpot-document-handoff`) |
 | `migration-brief.md` | Figma → Penpot scope & fidelity (drives `penpot-migrate`) |
+| `anti-slop-check.md` | does this screen/deck look AI-generated? score + fixes (drives `penpot-anti-slop`) |
 | `audit-request.md` | accessibility / token audit scope (drives the audit skills / `accessibility-gate`) |
 | `resume-continuation.md` | resume a truncated long run by `RUN_ID` |

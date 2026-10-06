@@ -1,0 +1,23 @@
+{
+  "id": "brief-to-screen-antislop",
+  "workflow": "brief-to-screen",
+  "fixture": "fixtures: filled prompts/design-brief.md for a B2B invoicing landing page (hero, features, social proof, pricing, CTA), desktop 1440, 'Avoid the generic-AI look: yes', existing token system without type tokens",
+  "expected": {
+    "must_do": [
+      "skip the opt-in question (the brief answers it) and store prefs.antiSlop = on",
+      "run the direction step at Phase 0 and record antiSlop.direction in the ledger",
+      "run the slop step (penpot-anti-slop diagnose) after the accessibility evaluator, and loop while slop.score > 35",
+      "propose (not apply) a fontFamilies token outside both lists in shared/anti-slop/lists.json"
+    ],
+    "must_create": [
+      "a hero that is not the centered gradient stack (left-aligned or split, flat token surface)",
+      "a features section that is not three identical icon cards"
+    ],
+    "must_not": [
+      "violet/indigo gradients, decorative glows or frosted glass in the final screen",
+      "invented stats, logos or testimonials",
+      "the cream + italic-serif-accent + sage combination unless the brief asks for it"
+    ]
+  },
+  "pass_criteria": "Exit with AA pass, design-quality belowThreshold == 0 and slop score <= 35 (or remaining tells explicitly presented at maxIterations); the same brief run with 'no' scores measurably higher on the slop score."
+}

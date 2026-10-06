@@ -2,7 +2,7 @@
 name: penpot-build-deck
 description: "Design a presentation / slide deck in Penpot from a brief, as a senior presentation designer: 1920x1080 slide boards built one slide per call from an approved outline, a committed deck style, varied slide archetypes (cover, agenda, section, content, big-number, comparison, grid, bento, quote, timeline, image-bleed, closing), tokenized, wired into a playable View-mode flow and exportable to PDF. NOT for app screens (use penpot-build-screen). Triggers: 'create a presentation', 'build a slide deck', 'design slides in Penpot', 'pitch deck', 'keynote', 'make slides for this talk', 'turn this outline into slides'."
 disable-model-invocation: false
-version: 0.1.0
+version: 0.2.0
 audiences: [product-designer, design-system]
 mode-default: review
 requires:
@@ -15,6 +15,7 @@ requires:
   - shared/visual-self-review.md
   - shared/design-quality.md
   - shared/visual-effects.md
+  - shared/anti-slop.md
   - shared/report-schemas/deck-quality-report.schema.json
 ---
 
@@ -76,11 +77,13 @@ Gotcha numbers refer to `shared/plugin-api-gotchas.md`.
 - **Constraints** — no fabricated numbers; fonts must exist in `penpot.fonts.all`; every slide gets a
   visual; forbidden: accent lines under titles, decorative bars/stripes, centered body text, default
   blue, cream backgrounds, text-only slides; `deck.*` tokens only (gradients/shadows/glass are
-  ledgered literals).
+  ledgered literals); **with strict anti-slop on**, the keys the direction step refused
+  (`shared/anti-slop.md` §1, deck readings in `penpot-anti-slop` `references/04-deck-tells.md`).
 - **Acceptance Criteria** — every slide a 1920×1080 board named `NN-archetype-slug`; ≥ 1 visual per
   slide; no two consecutive identical archetypes and no archetype > 40 % of the deck; type floor
   20 px, body ≥ 28 px; contrast ≥ 3:1 (text ≥ 24 px or ≥ 18.67 px bold) / 4.5:1 below; flow `Deck`
-  wired click → next; deck-quality score ≥ 3 on all seven axes or the weak axes named.
+  wired click → next; deck-quality score ≥ 3 on all seven axes or the weak axes named; with strict
+  anti-slop on, slop score ≤ 35 over the deck page.
 
 Act as a **senior presentation designer** who makes a real scale difference, uses the full canvas,
 varies the anchor slide to slide, and never ships a text-only slide.
@@ -96,7 +99,12 @@ varies the anchor slide to slide, and never ships a text-only slide.
 (`references/01-deck-brief-analysis.md`): slide budget, the one message, outline table
 `n | archetype | title | key content | visual | tone`, tonal arc, motif. Pick a deck style
 (`references/02-deck-styles.md`) and run the variety pre-check (`references/03-slide-archetypes.md`).
-✋ Checkpoint: approve outline + style + tonal arc + slide count.
+**Anti-slop opt-in:** read the stored preference (`penpot-anti-slop` → `scripts/antiSlopPrefs.js`); if
+unset and the brief doesn't answer it, ask the `shared/anti-slop.md` §0 question once (user's
+language) and store it. When `on`, run the **direction** step (`penpot-anti-slop`
+`references/02-direction-playbook.md` + `04-deck-tells.md`) before picking the deck style, and add
+its refused keys to the Constraints.
+✋ Checkpoint: approve outline + style + tonal arc + slide count (+ direction block if strict).
 
 **Phase 1 — Deck system.** `scripts/createDeckPage.js` (PHASE=create, then PHASE=verify in the next
 call). `scripts/setupDeckSystem.js`: token set `deck` (aliasing existing brand tokens where they
@@ -115,7 +123,8 @@ uploaded in `applyDeckEffects.js` and verified in the following call. ✋ Checkp
 optional auto-advance, section flows). `scripts/auditDeckQuality.js` — a non-`pass` gate blocks
 "done". Then the scored critique (`references/07-critique-framework.md`): seven axes + the monotony
 check, any axis < 3 → targeted revision (max 2 passes) → Markdown + JSON per
-`shared/report-schemas/deck-quality-report.schema.json`, mirrored to the ledger. Give the PDF-export
+`shared/report-schemas/deck-quality-report.schema.json`, mirrored to the ledger. Strict mode on: run
+`penpot-anti-slop` diagnose (`MODE = "deck"`) on the deck page and include the slop score. Give the PDF-export
 and share-link steps (`references/06-flow-and-playback.md`). ✋ Final checkpoint.
 
 ## 7. Critical Rules
@@ -151,14 +160,16 @@ Everything else (geometry, tokens, effects, flow wiring, uploads) is apply-with-
 Ledger under `RUN_ID` (`deck-<date>-<slug>`): `phase`, `deckPageId`, `deckStyle`, `tonalArc`, `motif`,
 `outline[]`, `slides:[{ n, id, name, archetype, done }]`, `styleFrozen`, `flowName`, `exceptions[]`,
 `capabilities` (verdicts for `waitForLayoutUpdate`, `uploadMediaUrl`, `addGridLayout`, `backgroundBlur`,
-play-order direction), `deckQuality`. `storage.deck` mirrors the ids for the session. Resume: re-read
+play-order direction), `deckQuality`, `antiSlop` (`pref`, `direction`, `reports[]` when strict mode is
+on; the opt-in itself is file-wide plugin data `penpot-ai` → `prefs.antiSlop`). `storage.deck` mirrors the ids for the session. Resume: re-read
 the ledger, re-run `createDeckPage.js` PHASE=verify, re-derive the slide list by name
 (`^\d{2}-`), continue from the first `done: false` slide (`shared/state-management.md`).
 
 ## 11. User Checkpoints
 | After phase | Artifacts | Ask |
 |-------------|-----------|-----|
-| 0 | outline table + style + tonal arc + motif + slide count | Approve direction? |
+| 0 (pref unset) | the anti-slop opt-in question (`shared/anti-slop.md` §0) | Avoid the generic-AI look? |
+| 0 | outline table + style + tonal arc + motif + slide count (+ direction block if strict) | Approve direction? |
 | 1 | token list (aliased / new / literal) + fonts found | Approve deck system? |
 | 2 (style freeze) | exports of slides 01–03 | Freeze this style? |
 | each batch | exports of the batch's slides + variety check | Approve batch? |

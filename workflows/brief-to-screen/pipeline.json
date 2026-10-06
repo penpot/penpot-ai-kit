@@ -2,7 +2,7 @@
   "$schema": "../../shared/pipeline.schema.json",
   "id": "brief-to-screen",
   "pattern": "evaluator-optimizer",
-  "description": "Generate a screen and iterate against two evaluators — accessibility (AA) and design quality (shared/design-quality.md §8) — until both gates pass.",
+  "description": "Generate a screen and iterate against two evaluators — accessibility (AA) and design quality (shared/design-quality.md §8) — until both gates pass; when the user opted in to strict anti-slop mode (prefs.antiSlop, asked once at Phase 0), a third evaluator — penpot-anti-slop diagnose — must score ≤ 35.",
   "maxIterations": 4,
   "steps": [
     {
@@ -24,21 +24,40 @@
         "scope:screen"
       ],
       "checkpoint": false,
+      "next": "strict",
+      "on_fail": "report"
+    },
+    {
+      "id": "strict",
+      "type": "branch",
+      "if": "prefs.antiSlop == \"on\"",
+      "thenNext": "slop",
+      "elseNext": "decide"
+    },
+    {
+      "id": "slop",
+      "skill": "penpot-anti-slop",
+      "inputs": [
+        "mode:diagnose",
+        "scope:screen"
+      ],
+      "checkpoint": false,
       "next": "decide",
       "on_fail": "report"
     },
     {
       "id": "decide",
       "type": "branch",
-      "if": "evaluate.highOrMedium == 0 && generate.designQuality.belowThreshold == 0",
+      "if": "evaluate.highOrMedium == 0 && generate.designQuality.belowThreshold == 0 && (prefs.antiSlop != \"on\" || slop.score <= 35)",
       "thenNext": "done",
       "elseNext": "generate",
       "elseInputs": [
         "fixIssues:evaluate.findings",
-        "fixDesign:generate.designQuality.findings"
+        "fixDesign:generate.designQuality.findings",
+        "fixSlop:slop.topFixes"
       ]
     }
   ],
-  "exit": "AA pass (no High/Medium) AND design-quality pass (no axis < 3) OR maxIterations reached -> present remaining issues + weak axes",
-  "output": "report: { screenId, iterations, finalA11y, finalDesignQuality }"
+  "exit": "AA pass (no High/Medium) AND design-quality pass (no axis < 3) AND (strict mode off OR slop score ≤ 35) OR maxIterations reached -> present remaining issues + weak axes",
+  "output": "report: { screenId, iterations, finalA11y, finalDesignQuality, finalSlop? }"
 }

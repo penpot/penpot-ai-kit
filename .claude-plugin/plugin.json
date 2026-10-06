@@ -1,7 +1,7 @@
 {
   "name": "penpot-ai-kit",
-  "version": "0.4.0",
-  "description": "Agent Skills + workflows that drive Penpot through its MCP: design tokens, components with variants, screens from briefs or code, slide decks, accessibility and token-governance audits, handoff documentation, DESIGN.md extraction, Figma migration.",
+  "version": "0.5.0",
+  "description": "Agent Skills + workflows that drive Penpot through its MCP: design tokens, components with variants, screens from briefs or code, slide decks, accessibility and token-governance audits, opt-in anti-slop direction and scoring, handoff documentation, DESIGN.md extraction, Figma migration.",
   "author": { "name": "elhombretecla" },
   "homepage": "https://github.com/elhombretecla/penpot-ai-kit",
   "repository": "https://github.com/elhombretecla/penpot-ai-kit",
@@ -13,6 +13,7 @@
     "./prompts/component-spec.md",
     "./prompts/handoff-brief.md",
     "./prompts/migration-brief.md",
+    "./prompts/anti-slop-check.md",
     "./prompts/audit-request.md",
     "./prompts/resume-continuation.md"
   ]

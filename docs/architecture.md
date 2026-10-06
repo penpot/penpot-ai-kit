@@ -33,11 +33,12 @@ design system. This kit supplies the missing layers — instructions, governance
 policies, evals — on top of Penpot's open data + MCP.
 
 ## Mandatory skill set (and why)
-Thirteen skills (twelve canonical + the router utility) cover the four audiences (DS teams, product designers,
+Fourteen skills (thirteen canonical + the router utility) cover the four audiences (DS teams, product designers,
 design engineers, migrating teams): `penpot-router`, `penpot-foundations`, `penpot-component-factory`,
 `penpot-build-screen`, `penpot-build-from-code`, `penpot-build-deck`, `penpot-document-handoff`, `penpot-design-md`,
 `penpot-audit-accessibility`, `penpot-audit-tokens`, `penpot-design-to-code-review`, `penpot-migrate`,
-+ `penpot-rename-layers`.
+`penpot-anti-slop` (opt-in strict layer over `shared/design-quality.md`: direction before building, a 0–100
+slop score as a third evaluator in `brief-to-screen` / `brief-to-deck`) + `penpot-rename-layers`.
 
 ## Roadmap — deferred capabilities (priority order, follow `shared/SKILL-template.md`)
 

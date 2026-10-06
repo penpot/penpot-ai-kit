@@ -2,7 +2,7 @@
 name: penpot-router
 description: "Thin dispatcher / entry point for any Penpot request. Use FIRST on any Penpot task to ensure high_level_overview ran, read the user's intent, and route to exactly one target skill or workflow (build a screen, build a slide deck, build a design system, audit accessibility, audit tokens, migrate from Figma, rename layers, code review, extract DESIGN.md, etc.). Never mutates the canvas. Triggers: 'work on this Penpot file', 'help me with Penpot', 'I want to design/build/audit/migrate in Penpot', 'where do I start', 'which skill should I use', 'route this request', ambiguous Penpot asks."
 disable-model-invocation: false
-version: 0.3.0
+version: 0.3.1
 audiences: [design-system, product-designer, design-engineer, migration]
 mode-default: suggest
 requires:
@@ -66,6 +66,8 @@ flow."** Capture:
 - **Inputs** — selected shapes/boards, target page, referenced tokens/components, external refs (code
   paths, Figma URLs).
 - **Constraints** — forbidden components, inviolable rules, mode (suggest/review/autofix), scope caps.
+  If the user already said whether to avoid the generic-AI look, forward it as `antiSlop: on|off` —
+  the build skill then stores it and skips its opt-in question. The router never asks it itself.
 - **Acceptance Criteria** — what "done" means for the downstream skill (e.g. "WCAG AA contrast ≥ 4.5:1
   on body text", "all spacing on the 4px grid", "variant matrix complete for State axis"). The router
   does not verify these; it forwards them so the target skill can.
@@ -147,6 +149,7 @@ Full phrasing map and fallbacks: `references/01-intent-taxonomy.md`.
 | Compare design vs. code (drift) | `penpot-design-to-code-review` | "does this design match the code", "design-to-code review", "find drift between Penpot and the component" |
 | Extract a portable DESIGN.md spec from the file | `penpot-design-md` | "generate a DESIGN.md", "export our design guidelines as markdown", "style guide file for our coding agent" |
 | Import / migrate from Figma | `penpot-migrate` | "migrate this Figma file", "import from Figma", "bring our Figma library into Penpot" |
+| Check / steer a design away from the generic-AI look | `penpot-anti-slop` | "does this look AI-generated", "anti-slop check", "make it feel less generic", "¿parece hecho por IA?", "evita la estética IA" |
 | Rename layers semantically | `penpot-rename-layers` | "rename these layers", "clean up layer names", "semantic HTML layer names", "fix Rectangle 12 names" |
 
 ### Workflows (multi-skill orchestrations)

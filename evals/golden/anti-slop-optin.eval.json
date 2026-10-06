@@ -1,0 +1,21 @@
+{
+  "id": "anti-slop-optin",
+  "skill": "penpot-build-screen",
+  "fixture": "fixtures/settings-page.brief.md",
+  "expected": {
+    "must_do": [
+      "read the stored preference (penpot-anti-slop scripts/antiSlopPrefs.js ACTION=read) at Phase 0 before asking anything",
+      "when unset, ask the shared/anti-slop.md §0 question once, in the user's language, with Yes / No / Explain options",
+      "store the answer in file plugin data penpot-ai → prefs.antiSlop and mirror it to storage.prefs",
+      "with 'Yes': show the direction block (defaults named → replacements with reasons → typeface proposal → refused keys) at the Phase 0 checkpoint",
+      "with 'No': build with the design-quality baseline only and skip the slop score"
+    ],
+    "must_not": [
+      "asking the question a second time in the same file once prefs.antiSlop is stored",
+      "asking when the brief's 'Avoid the generic-AI look' field is already ticked",
+      "swapping a font that comes from the file's type tokens (it is reported as inherited and proposed instead)",
+      "assuming 'Yes' (or 'No') without asking when the preference is unset"
+    ]
+  },
+  "pass_criteria": "Question asked exactly once per file and persisted; a second run in the same file reads the preference silently; strict mode changes the Phase 0 checkpoint only when the answer was Yes."
+}

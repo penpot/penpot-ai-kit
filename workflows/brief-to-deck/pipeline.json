@@ -2,7 +2,7 @@
   "$schema": "../../shared/pipeline.schema.json",
   "id": "brief-to-deck",
   "pattern": "evaluator-optimizer",
-  "description": "Generate a slide deck from a brief and iterate against two evaluators — accessibility on slides (AA with large-text thresholds, scope:deck) and deck quality (penpot-build-deck references/07-critique-framework.md + the structural gate) — until both gates pass.",
+  "description": "Generate a slide deck from a brief and iterate against two evaluators — accessibility on slides (AA with large-text thresholds, scope:deck) and deck quality (penpot-build-deck references/07-critique-framework.md + the structural gate) — until both gates pass; when the user opted in to strict anti-slop mode (prefs.antiSlop, asked once at Phase 0), a third evaluator — penpot-anti-slop diagnose — must score ≤ 35.",
   "maxIterations": 3,
   "steps": [
     {
@@ -25,21 +25,41 @@
         "level:AA"
       ],
       "checkpoint": false,
+      "next": "strict",
+      "on_fail": "report"
+    },
+    {
+      "id": "strict",
+      "type": "branch",
+      "if": "prefs.antiSlop == \"on\"",
+      "thenNext": "slop",
+      "elseNext": "decide"
+    },
+    {
+      "id": "slop",
+      "skill": "penpot-anti-slop",
+      "inputs": [
+        "mode:diagnose",
+        "scope:deck",
+        "MODE:deck"
+      ],
+      "checkpoint": false,
       "next": "decide",
       "on_fail": "report"
     },
     {
       "id": "decide",
       "type": "branch",
-      "if": "evaluate.highOrMedium == 0 && generate.deckQuality.belowThreshold == 0 && generate.deckQuality.structuralGate.pass == true",
+      "if": "evaluate.highOrMedium == 0 && generate.deckQuality.belowThreshold == 0 && generate.deckQuality.structuralGate.pass == true && (prefs.antiSlop != \"on\" || slop.score <= 35)",
       "thenNext": "done",
       "elseNext": "generate",
       "elseInputs": [
         "fixIssues:evaluate.findings",
-        "fixDesign:generate.deckQuality.findings"
+        "fixDesign:generate.deckQuality.findings",
+        "fixSlop:slop.topFixes"
       ]
     }
   ],
-  "exit": "AA pass on slides (no High/Medium) AND deck-quality pass (no axis < 3, structural gate pass) OR maxIterations reached -> present remaining issues + weak axes + unlinked slides",
-  "output": "report: { deckPageId, slideCount, flowName, iterations, finalA11y, finalDeckQuality }"
+  "exit": "AA pass on slides (no High/Medium) AND deck-quality pass (no axis < 3, structural gate pass) AND (strict mode off OR slop score ≤ 35) OR maxIterations reached -> present remaining issues + weak axes + unlinked slides",
+  "output": "report: { deckPageId, slideCount, flowName, iterations, finalA11y, finalDeckQuality, finalSlop? }"
 }

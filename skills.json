@@ -1,8 +1,8 @@
 {
   "namespace": "app.penpot.skills",
   "name": "penpot-core-skills",
-  "version": "0.4.0",
-  "description": "Centralized agentic design skills for Penpot and the Penpot MCP: token/library foundation, component variants, screen building (from brief and from code), slide decks (1920x1080 boards + playable flows), accessibility and token-governance audits, design-to-code review, handoff documentation, DESIGN.md extraction, Figma migration, semantic renaming, and a router. Grounded in the real Penpot MCP surface (4 core tools, plus import_image in local mode).",
+  "version": "0.5.0",
+  "description": "Centralized agentic design skills for Penpot and the Penpot MCP: token/library foundation, component variants, screen building (from brief and from code), slide decks (1920x1080 boards + playable flows), accessibility and token-governance audits, opt-in anti-slop direction and scoring, design-to-code review, handoff documentation, DESIGN.md extraction, Figma migration, semantic renaming, and a router. Grounded in the real Penpot MCP surface (4 core tools, plus import_image in local mode).",
   "dependencies": {
     "node": ">=22.0.0"
   },
@@ -10,7 +10,7 @@
     {
       "id": "penpot-router",
       "name": "penpot-router",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "path": "skills/penpot-router/SKILL.md",
       "mode": "suggest",
       "audiences": [
@@ -48,7 +48,7 @@
     {
       "id": "penpot-build-screen",
       "name": "penpot-build-screen",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "path": "skills/penpot-build-screen/SKILL.md",
       "mode": "review",
       "audiences": [
@@ -71,7 +71,7 @@
     {
       "id": "penpot-build-deck",
       "name": "penpot-build-deck",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "path": "skills/penpot-build-deck/SKILL.md",
       "mode": "review",
       "audiences": [
@@ -79,6 +79,18 @@
         "design-system"
       ],
       "description": "Design a slide deck from a brief: 1920x1080 slide boards, one per call, deck tokens, varied archetypes, playable View-mode flow, PDF-ready."
+    },
+    {
+      "id": "penpot-anti-slop",
+      "name": "penpot-anti-slop",
+      "version": "0.1.0",
+      "path": "skills/penpot-anti-slop/SKILL.md",
+      "mode": "suggest",
+      "audiences": [
+        "product-designer",
+        "design-system"
+      ],
+      "description": "Opt-in anti-slop layer: direction before building, a 0–100 slop score (probes + visual review), reviewed fixes."
     },
     {
       "id": "penpot-document-handoff",

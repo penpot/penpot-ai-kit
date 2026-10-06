@@ -13,6 +13,7 @@
  *   - dangling `penpot-*` name mentions in any shipped .md (skills that don't exist)
  *   - prompts/*.md without slash-command frontmatter; plugin.json / marketplace.json version drift
  *   - SKILL.md files missing the §16 "Doctrine paths" line, or with over-long descriptions
+ *   - anti-slop lists.json version drift vs. the copies embedded in penpot-anti-slop scripts
  *
  * Usage:  node scripts/dev/validate-kit.mjs        exit 0 = clean, 1 = problems (listed)
  */
@@ -249,6 +250,19 @@ if (existsSync(join(ROOT, ".claude-plugin/plugin.json"))) {
   bad(".claude-plugin/plugin.json", "missing (the kit ships as a Claude Code plugin since 0.4.0)");
 }
 if (pkg && manifest && pkg.version !== manifest.version) bad("package.json", `version ${pkg.version} != skills.json ${manifest.version}`);
+
+// ---------- 8. anti-slop lists ↔ the copies embedded in execute_code scripts ----------
+if (existsSync(join(ROOT, "shared/anti-slop/lists.json"))) {
+  let lists = null;
+  try { lists = readJSON("shared/anti-slop/lists.json"); } catch (e) { bad("shared/anti-slop/lists.json", `unparseable: ${e.message}`); }
+  const dir = "skills/penpot-anti-slop/scripts";
+  if (lists && existsSync(join(ROOT, dir))) {
+    for (const f of readdirSync(join(ROOT, dir)).filter((n) => n.endsWith(".js"))) {
+      const m = readFileSync(join(ROOT, dir, f), "utf8").match(/LISTS_VERSION = "([^"]+)"/);
+      if (m && m[1] !== lists.version) bad(`${dir}/${f}`, `LISTS_VERSION ${m[1]} != shared/anti-slop/lists.json version ${lists.version} — re-sync the embedded copy`);
+    }
+  }
+}
 
 // ---------- report ----------
 if (problems.length) {

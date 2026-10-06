@@ -133,6 +133,14 @@ can check.
 
 The audit vocabulary: report these by name. Each row is *tell → why it reads generated → fix*.
 
+These are the **always-on core** — craft, not style, so they apply whether or not the user opted in
+to strict mode. When the user opts in (`prefs.antiSlop === "on"`, `shared/anti-slop.md` §0), the full
+generic-AI taxonomy in `shared/anti-slop.md` §1 applies on top (violet gradients, glows, glass, pill
+badges, icon tiles, emoji icons, default/trend typefaces, buzzwords…) and `penpot-anti-slop` scores
+it. Overlaps keep one name each: *three equal cards* ↔ `identical-triplet`, *gradient hero* ↔
+`violet-gradient` + `centered-hero-stack`, *invented stats/logos* ↔ `round-number-stats` +
+`generic-logo-strip`.
+
 | Tell | Why it reads generated | Fix |
 |---|---|---|
 | Three equal cards centered under a centered heading | The single most common training-set layout | Unequal spans, an asymmetric pair, or a different pattern (§5) |
@@ -163,7 +171,7 @@ traceable to profile + skeleton + brief.
 | `color` | §3 held — budget, neutrals, accent ownership, reserved feedback colors? |
 | `spacing` | §4 held — gap ladder, proximity rule, section rhythm? |
 | `content` | §6 held — honest, realistic, verb-first, states covered? |
-| `distinctiveness` | Would this screen be recognizable next to the average output for the same brief? Zero §7 tells? |
+| `distinctiveness` | Would this screen be recognizable next to the average output for the same brief? Zero §7 tells? With strict mode on, cite the slop score (`shared/anti-slop.md` §3) — a score > 35 caps this axis at 2. |
 
 **Procedure.** Score against the *export image*, not the intention — every score cites evidence
 visible in the export or the shape tree. Any axis **< 3** triggers a targeted revision pass (max 2,

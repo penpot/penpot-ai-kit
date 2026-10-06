@@ -14,8 +14,11 @@ generator's own scored critique + structural gate (`references/07-critique-frame
 2. **evaluate** — `penpot-audit-accessibility` in `scope:deck`: slide contrast with the large-text
    thresholds (≥ 24 px, or ≥ 18.67 px bold → 3:1; below → 4.5:1), one `h1` per slide, no target-size
    checks. Emits the accessibility report with `highOrMedium` precomputed.
-3. **decide** — `evaluate.highOrMedium == 0 && generate.deckQuality.belowThreshold == 0 &&
-   generate.deckQuality.structuralGate.pass == true` → done. Otherwise back to **generate** with both
+3. **slop** (opt-in) — only when the user opted in at Phase 0 (`prefs.antiSlop == "on"`):
+   `penpot-anti-slop` diagnose with `MODE = "deck"` scores the deck page 0–100
+   (`shared/report-schemas/slop-report.schema.json`; deck readings in its `references/04-deck-tells.md`).
+4. **decide** — `evaluate.highOrMedium == 0 && generate.deckQuality.belowThreshold == 0 &&
+   generate.deckQuality.structuralGate.pass == true` (and, in strict mode, `slop.score <= 35`) → done. Otherwise back to **generate** with both
    findings sets as inputs; the generator revises only the named slides (never rebuilds the deck).
    `maxIterations: 3`.
 
@@ -25,7 +28,7 @@ generator's own scored critique + structural gate (`references/07-critique-frame
 - `slideOutline` — the approved outline table from the Phase 0 checkpoint.
 
 ## Exit
-Both gates pass, or `maxIterations` reached → present the remaining findings, the weak axes and any
+Every active gate passes (a11y, deck quality, and the slop score in strict mode), or `maxIterations` reached → present the remaining findings, the weak axes and any
 unlinked slides, plus the PDF-export and share-link steps (`references/06-flow-and-playback.md`).
 
 ## Failure modes to watch

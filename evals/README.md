@@ -67,4 +67,7 @@ Treat a PASS as strong signal, not proof — spot-check FAILs by hand before bla
 | `build-screen-direct` | penpot-build-screen | frame via createScreenFrame.js with token-bound gap/padding; sectioned; assemble + structural gate; scored critique |
 | `router-dispatch` | penpot-router | ambiguous "make a page" → one question, one route, one contract; zero mutations |
 | `design-system-bootstrap` | workflow design-system-bootstrap | tokens → components → governance → naming with checkpoints; variant gate honoured; 0 High |
+| `anti-slop-diagnose` | penpot-anti-slop | probes before review; ≥ 12/15 planted tells found on `fixtures/sloppy-landing.state.json`; band ai-default; read-only |
+| `anti-slop-optin` | penpot-build-screen | opt-in asked once per file, persisted in plugin data, skipped when the brief answers it; direction block only on Yes |
+| `brief-to-screen-antislop` | workflow brief-to-screen | strict mode from the brief; direction step; slop step gates the loop at ≤ 35; no counter-default swap |
 | `brief-to-deck` | workflow brief-to-deck | six 1920×1080 slides one per call; style freeze; deck tokens; flow "Deck"; structural gate pass; AA on slides |

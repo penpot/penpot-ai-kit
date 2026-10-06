@@ -14,6 +14,7 @@ the run ledger per `shared/state-management.md`).
 | `drift-report.schema.json` | `penpot-design-to-code-review` | `code-to-penpot-sync` (`review.drift`) |
 | `design-quality-report.schema.json` | `penpot-build-screen` (scored critique, `shared/design-quality.md` §8) | `brief-to-screen` (`generate.designQuality.belowThreshold`) |
 | `deck-quality-report.schema.json` | `penpot-build-deck` (structural gate + scored critique, `references/07-critique-framework.md`) | `brief-to-deck` (`generate.deckQuality.belowThreshold`, `generate.deckQuality.structuralGate.pass`) |
+| `slop-report.schema.json` | `penpot-anti-slop` diagnose (`shared/anti-slop.md` §3) | `brief-to-screen` / `brief-to-deck` `slop` step, only in strict mode (`slop.score`, `slop.pass`) |
 
 ## Derived fields used by pipeline branch conditions
 
@@ -21,6 +22,7 @@ the run ledger per `shared/state-management.md`).
 - `drift` (drift report) = `summary.drift + summary.designOnly + summary.codeOnly` (everything
   that is not a `match`).
 - `belowThreshold` (design-quality and deck-quality reports) = `count of axes with score < 3`.
+- `score` / `pass` (slop report) = the slop score from `scripts/slopScore.js` (0–100, lower is better) and `score <= 35`.
 - `structuralGate.pass` (deck-quality report) = the `auditDeckQuality.js` verdict (dims, ≥ 1 visual
   per slide, type floor, safe area, flow wired, no consecutive identical archetypes).
 

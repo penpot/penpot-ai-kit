@@ -4,7 +4,7 @@
   "skills": [
     {
       "name": "penpot-router",
-      "version": "0.3.0",
+      "version": "0.3.1",
       "path": "skills/penpot-router/SKILL.md",
       "description": "Route any Penpot request to exactly one skill or workflow."
     },
@@ -22,7 +22,7 @@
     },
     {
       "name": "penpot-build-screen",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "path": "skills/penpot-build-screen/SKILL.md",
       "description": "Design production-grade screens from a brief, reusing the system, section by section."
     },
@@ -34,9 +34,15 @@
     },
     {
       "name": "penpot-build-deck",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "path": "skills/penpot-build-deck/SKILL.md",
       "description": "Slide decks from a brief: 1920x1080 slide boards, deck tokens, varied archetypes, playable View-mode flow."
+    },
+    {
+      "name": "penpot-anti-slop",
+      "version": "0.1.0",
+      "path": "skills/penpot-anti-slop/SKILL.md",
+      "description": "Opt-in layer that steers designs away from the generic-AI look and scores them 0–100."
     },
     {
       "name": "penpot-document-handoff",

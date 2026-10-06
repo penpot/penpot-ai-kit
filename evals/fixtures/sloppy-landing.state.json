@@ -1,0 +1,23 @@
+{
+  "name": "sloppy-landing",
+  "_comment": "State fixture for anti-slop-diagnose: a 1440-wide landing built to carry planted generic-AI tells (shared/anti-slop.md §1). The operator recreates it with execute_code (one section per call) before running the eval. Names are semantic so region detection works. Expected tells are listed under expectedProbes / expectedReview.",
+  "root": { "type": "board", "name": "Landing", "width": 1440, "fill": "#FFFFFF", "layout": "flex column" },
+  "sections": [
+    { "name": "hero", "height": 800, "fill": "linear gradient #6366F1 → #A855F7",
+      "children": [
+        { "type": "board", "name": "pill-badge", "size": "200x32", "radius": 16, "text": "New ✨ AI-powered", "position": "directly above the headline" },
+        { "type": "text", "name": "h1", "text": "Unlock the future of work", "fontSize": 64, "align": "center", "font": "Inter, with the word 'future' in Instrument Serif italic" },
+        { "type": "text", "name": "p", "text": "Supercharge your team — seamless, effortless — it's not just a tool, it's a revolution.", "align": "center" },
+        { "type": "board", "name": "button-primary", "text": "Get started", "position": "centered" },
+        { "type": "ellipse", "name": "glow", "size": "400x400", "layerBlur": 120, "fill": "#A855F7 @ 40%" }
+      ] },
+    { "name": "logos", "height": 120, "children": [ { "type": "row", "text": "6 grey placeholder logos at 40% opacity, 'Trusted by'" } ] },
+    { "name": "features", "height": 320, "layout": "flex row",
+      "children": [ { "type": "card x3", "size": "320x240 each, identical", "first child": "48x48 rounded tile with a line icon", "text": "Fast. Simple. Powerful." } ] },
+    { "name": "stats", "height": 200, "layout": "flex row", "children": [ { "type": "text x3", "fontSize": 48, "text": ["10k+", "99.9%", "5x"] } ] },
+    { "name": "footer", "height": 200, "children": [ { "type": "text", "text": "© Acme Inc. Lorem ipsum dolor sit amet." } ] }
+  ],
+  "expectedProbes": ["violet-gradient", "decorative-glow", "sparkle-ai-marker", "pill-above-headline", "centered-hero-stack", "serif-accent-word", "identical-triplet", "icon-in-tile-cards", "round-number-stats", "em-dash-heavy", "buzzword-density", "not-x-but-y", "placeholder-residue", "default-typeface", "trend-typeface"],
+  "expectedReview": ["generic-logo-strip", "vague-headline"],
+  "expectedBand": "ai-default"
+}

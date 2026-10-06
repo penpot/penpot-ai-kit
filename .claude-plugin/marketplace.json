@@ -3,14 +3,14 @@
   "owner": { "name": "elhombretecla" },
   "metadata": {
     "description": "Penpot AI Kit — agentic design skills for Penpot via its MCP.",
-    "version": "0.4.0"
+    "version": "0.5.0"
   },
   "plugins": [
     {
       "name": "penpot-ai-kit",
       "source": "./",
       "description": "Skills, workflows and brief templates that let an AI assistant work inside a real Penpot file: tokens, components, screens, slide decks, audits, handoff, Figma migration.",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "category": "design",
       "tags": ["penpot", "mcp", "design-tokens", "design-systems", "slides", "accessibility"]
     }
