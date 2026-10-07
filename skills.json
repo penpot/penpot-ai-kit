@@ -1,7 +1,7 @@
 {
   "namespace": "app.penpot.skills",
   "name": "penpot-core-skills",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Centralized agentic design skills for Penpot and the Penpot MCP: token/library foundation, component variants, screen building (from brief and from code), slide decks (1920x1080 boards + playable flows), accessibility and token-governance audits, opt-in anti-slop direction and scoring, design-to-code review, handoff documentation, DESIGN.md extraction, Figma migration, semantic renaming, and a router. Grounded in the real Penpot MCP surface (4 core tools, plus import_image in local mode).",
   "dependencies": {
     "node": ">=22.0.0"

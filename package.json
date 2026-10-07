@@ -1,6 +1,6 @@
 {
   "name": "penpot-ai-kit",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Agentic design skills, workflows and installer for Penpot via the Penpot MCP. Content-only kit: skills + instructions + policies, no build step.",
   "type": "module",
   "bin": {

@@ -1,6 +1,6 @@
 {
   "name": "penpot-ai-kit",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Agent Skills + workflows that drive Penpot through its MCP: design tokens, components with variants, screens from briefs or code, slide decks, accessibility and token-governance audits, opt-in anti-slop direction and scoring, handoff documentation, DESIGN.md extraction, Figma migration.",
   "author": { "name": "elhombretecla" },
   "homepage": "https://github.com/penpot/penpot-ai-kit",
