@@ -1,4 +1,11 @@
 # Penpot AI Kit
+
+[![Latest release](https://img.shields.io/github/v/release/penpot/penpot-ai-kit?label=release&color=6911d4)](https://github.com/penpot/penpot-ai-kit/releases/latest)
+[![validate](https://github.com/penpot/penpot-ai-kit/actions/workflows/validate.yml/badge.svg)](https://github.com/penpot/penpot-ai-kit/actions/workflows/validate.yml)
+[![Last commit](https://img.shields.io/github/last-commit/penpot/penpot-ai-kit)](https://github.com/penpot/penpot-ai-kit/commits/main)
+[![License: CC BY 4.0](https://img.shields.io/badge/license-CC%20BY%204.0-lightgrey)](LICENSE)
+[![Requires Penpot MCP](https://img.shields.io/badge/requires-Penpot%20MCP-000000)](https://help.penpot.app/mcp/)
+
 <img width="1278" height="639" alt="Penpot AI Kit" src="https://github.com/user-attachments/assets/f4d016df-ebea-4520-af69-058ae300488e" />
 
 **Let an AI assistant work directly inside your Penpot file, while you stay in control.**
@@ -92,7 +99,7 @@ safe to re-run:
 The kit also ships as a **Claude Code plugin** (manifests in `.claude-plugin/`). In Claude Code:
 
 ```
-/plugin marketplace add elhombretecla/penpot-ai-kit
+/plugin marketplace add penpot/penpot-ai-kit
 /plugin install penpot-ai-kit@penpot-ai-kit
 ```
 
