@@ -1,6 +1,6 @@
 {
   "name": "penpot-ai-kit",
-  "owner": { "name": "elhombretecla" },
+  "owner": { "name": "Penpot" },
   "metadata": {
     "description": "Penpot AI Kit — agentic design skills for Penpot via its MCP.",
     "version": "0.5.0"
