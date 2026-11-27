@@ -34,6 +34,8 @@
           "designValue": { "type": ["string", "null"] },
           "codeValue": { "type": ["string", "null"] },
           "token": { "type": ["string", "null"] },
+          "matchingToken": { "type": ["string", "null"], "description": "For an untokenized value: the existing token whose resolved value is exactly equal, if any." },
+          "property": { "type": ["string", "null"] },
           "status": { "enum": ["match", "drift", "design-only", "code-only"] },
           "delta": { "type": ["string", "null"] },
           "grid4px": { "type": ["boolean", "null"] },

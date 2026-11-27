@@ -87,13 +87,19 @@ const spacing = board && board.flex ? {
 
 ## 5. Fallback: match a hardcoded value to an existing token
 
-When a property is hardcoded, scan `tokenOverview()` for an exact resolved-value match so the report can suggest a token:
+When a property is hardcoded, look for a token whose resolved value is exactly equal, so the report can
+suggest it. `penpotUtils.tokenOverview()` only lists token *names* (`{ set: { type: [names] } }`), so
+read the values from the active sets — `extractMarkupStyle.js` already builds this index
+(`storage.run.extracted.tokenIndex`, keyed `"type:VALUE"`) and `generateDriftReport.js` fills
+`matchingToken` from it:
 
 ```js
-const overview = penpotUtils.tokenOverview();
-const target = "REPLACE-ME-#0066ff".toLowerCase();
-const hit = (overview.tokens || []).find(t =>
-  t.type === "color" && String(t.resolvedValue).toLowerCase() === target);
+const target = "REPLACE-ME-#0066ff".toUpperCase();
+let hit = null;
+for (const set of penpot.library.local.tokens.sets) {
+  if (!set.active) continue;   // an inactive set reports values resolved from the active ones
+  hit = hit || set.tokens.find(t => t.type === "color" && String(t.resolvedValue).toUpperCase() === target);
+}
 return { rawValue: target, suggestedToken: hit ? hit.name : null };
 ```
 
