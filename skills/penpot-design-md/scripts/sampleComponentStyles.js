@@ -8,9 +8,18 @@ const NAMES = ["REPLACE-ME-1", "REPLACE-ME-2"]; // ≤5 per call
 
 const lib = penpot.library.local;
 const results = [];
+// A variant group shows up as SEVERAL components with the same name (one per variant). Sample every
+// one of them — taking only the first match documents the Default state and silently drops the rest.
+const targets = [];
 for (const name of NAMES) {
-  const comp = (lib.components || []).find((c) => c.name === name);
-  if (!comp) { results.push({ name, error: "component not found" }); continue; }
+  const matches = (lib.components || []).filter((c) => c.name === name);
+  if (!matches.length) { results.push({ name, error: "component not found" }); continue; }
+  const head = matches.find((c) => c.isVariant && c.isVariant());
+  const group = head && head.variants && head.variants.variantComponents ? head.variants.variantComponents() : null;
+  for (const c of (group && group.length ? group : matches)) targets.push(c);
+}
+for (const comp of targets) {
+  const name = comp.name;
   try {
     const root = comp.mainInstance();
     const texts = penpotUtils.findShapes((s) => s.type === "text", root).slice(0, 3);

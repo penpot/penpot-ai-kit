@@ -5,8 +5,9 @@
   "expected": {
     "must_create": [
       "token set 'primitives' with at least one color and one spacing token",
-      "token set 'semantic' with color.action.primary.bg referencing a primitive",
-      "all spacing tokens are multiples of 4"
+      "color.action.primary.bg in the 'modes/light' set (where the skill routes colour semantics; 'semantic' holds only mode-invariant aliases), referencing a primitive",
+      "all spacing tokens are multiples of 4",
+      "no empty token set left behind (a colour-only brief creates no 'semantic' set)"
     ],
     "must_not": [
       "shapes bound directly to primitive color tokens",
@@ -14,7 +15,7 @@
       "use of hyphenated token types like 'border-radius'"
     ]
   },
-  "pass_criteria": "tokenOverview() shows primitives + semantic; semantic alias resolves to the primitive value; validateTokens.js reports 0 off-grid and 0 unresolved.",
+  "pass_criteria": "tokenOverview() shows primitives + modes/light; the semantic alias resolves to the primitive value; validateTokens.js reports 0 off-grid, 0 unresolved and 0 emptyResolved.",
   "triggers": {
     "should": [
       "create a color and spacing token system for this file",

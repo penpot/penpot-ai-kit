@@ -50,8 +50,11 @@ bound to tokens, registered with `createComponent` (`references/02-flex-grid-lay
 tokens come back in `exceptions` — propose them, do not hide them. ✋ Review the base export.
 
 **Phase 2 — One component per cell.** `scripts/createVariants.js` clones the base for each cell,
-creates a component from it and retokenizes the state on the new main instance. Verify bindings in the
-next call. ✋ Review the cells.
+**detaches the clone** (a clone of a main instance is a component copy — registering it as-is wraps it
+in a layout-less board), registers it as its own component and applies that state's tokens
+(`tokens: { fill, text, stroke }`). Tokens it cannot find come back in `missingTokens`: propose them.
+A state that adds something the base lacks (a focus ring) is built by hand and reported. Verify
+bindings in the next call. ✋ Review the cells.
 
 **Phase 3 — Group, name axes, organize.** Version-gated (#12). `scripts/createVariantGroup.js` reads
 `penpot.version`:
@@ -64,14 +67,17 @@ It prefers `penpotUtils.createVariantContainer([{ shape: mainInstance, propertie
 `setVariantProperty` (path `"legacy"`); `references/03-variant-api.md`. It clears the container's fill
 (#11), gives it a flex layout, and returns `{ containerId, path, properties, components, restorePoint,
 validation, next }`. In the *next* call read `penpot.currentFile.validate()` and each component's
-`variantError`: anything non-empty → stop, report, offer the restore point. ✋ Review the container.
+`variantError`: anything non-empty → stop, report, offer the restore point. Once grouped, every variant
+is simply named after the component — the `Property=Value` pairs live in `variantProps`. The standalone
+base component from Phase 1 is now redundant: ask before removing it. ✋ Review the container.
 
 **Fallback (below 2.20, or a failed integrity check).** Skip the container. Keep the Phase 2 cells as
 standalone components named `Component / Axis=Value, …`, arranged in a labeled grid; Penpot groups
 them by the `/` prefix and the user can convert them to variants in the UI.
 
-**Phase 4 — Validate.** `scripts/validateComponent.js` (every required state present, all values
-tokenized, naming correct); optionally `scripts/switchVariantDemo.js`. Then the structured report.
+**Phase 4 — Validate.** `scripts/validateComponent.js` reads the variants API (or `Axis=Value` names in
+the fallback): every required state present, no raw fill / stroke / radius / gap / padding on a cell or
+its children, PascalCase properties, no `variantError`, clean `validate()`; optionally `scripts/switchVariantDemo.js`. Then the structured report.
 
 ## Rules
 1. **States:** `Default / Hover / Pressed / Focus / Disabled` for every interactive component unless

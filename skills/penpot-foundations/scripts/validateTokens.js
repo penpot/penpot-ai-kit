@@ -18,7 +18,7 @@ const emptyResolved = [];
 for (const t of all) {
   const ref = (String(t.value).match(/^\{(.+)\}$/) || [])[1];
   if (ref && !byName.has(ref)) unresolved.push({ name: t.name, ref });
-  if (!t.resolved && t.resolved !== "0") emptyResolved.push(t.name);
+  if (t.resolved === null || t.resolved === undefined || t.resolved === "") emptyResolved.push(t.name);   // 0 is a valid value
   if ((t.type === "spacing" || t.type === "dimension") && !ref) {
     const n = Number(t.value);
     if (!Number.isNaN(n) && n % GRID !== 0) offGrid.push({ name: t.name, value: t.value });

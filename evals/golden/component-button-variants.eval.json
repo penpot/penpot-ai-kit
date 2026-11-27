@@ -6,8 +6,9 @@
     "must_create": [
       "a Button component built as a flex Board",
       "variant components for all five required States",
-      "variant names in Property=Value form (e.g. 'Button, Hierarchy=Primary, State=Hover')",
-      "all fills/spacing bound to tokens"
+      "variant properties in Property=Value form, read from the variants API (variantProps, e.g. Hierarchy=Primary, State=Hover) — once grouped on Penpot >= 2.20 every variant is simply named 'Button'",
+      "all fills/spacing bound to tokens",
+      "each variant cell is a single flex Board (the detached clone itself), not a wrapper board around a nested Button copy"
     ],
     "must_not": [
       "any hardcoded fill/spacing on a variant",
