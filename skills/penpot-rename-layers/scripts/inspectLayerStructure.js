@@ -35,7 +35,10 @@ if (SCOPE === "selection" && penpot.selection && penpot.selection.length > 0) {
 const allShapes = penpotUtils.findShapes(() => true, root) || [];
 
 // ── Page-relative hints for structural inference ───────────────────────────
-const topLevel = allShapes.filter(s => !s.parentId || s.parentId === root.id);
+// Shapes expose `parent` (a shape), not `parentId` — reading `parentId` is always undefined.
+const parentIdOf = s => (s.parent && s.parent.id) || null;
+const rootY = typeof root.y === "number" ? root.y : 0;   // position hints are relative to the scope root
+const topLevel = allShapes.filter(s => !parentIdOf(s) || parentIdOf(s) === root.id);
 const estimatedPageWidth = Math.max(
   100, ...topLevel.map(s => (s.width || 0))
 );
@@ -82,10 +85,10 @@ const layers = allShapes.map(shape => {
     width: Math.round(shape.width || 0),
     height: Math.round(shape.height || 0),
     isFullWidth: (shape.width || 0) >= estimatedPageWidth * 0.8,
-    isAtTop: (shape.y || 0) < 120,
-    isAtBottom: (shape.y || 0) > estimatedPageHeight * 0.8,
+    isAtTop: ((shape.y || 0) - rootY) < 96,
+    isAtBottom: ((shape.y || 0) - rootY) > estimatedPageHeight * 0.8,
     // hierarchy
-    parentId: shape.parentId || null,
+    parentId: parentIdOf(shape),
     childCount: children.length,
     childTypes: [...new Set(children.map(c => c.type))].join(","),
     // fills / strokes (flags only — arrays are immutable item-by-item)

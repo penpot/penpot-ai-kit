@@ -49,7 +49,7 @@ const texts=[]; const interactives=[];
 penpotUtils.analyzeDescendants(root, (r, s)=>{
   if (s.type==="text"){
     const fg=(s.fills||[])[0];
-    texts.push({ id:s.id, name:s.name, chars:(s.characters||"").slice(0,40), fontSize:s.fontSize, fg:fg&&fg.fillColor, bg:bgOf(s) });
+    texts.push({ id:s.id, name:s.name, chars:(s.characters||"").slice(0,40), fontSize:Number(s.fontSize)||null, fontWeight:Number(s.fontWeight)||null, fg:fg&&fg.fillColor, bg:bgOf(s) });
   }
   const looksInteractive = /button|input|link|nav|tab|checkbox|radio|switch/i.test(s.name||"") || (s.isComponentInstance && s.isComponentInstance());
   if (looksInteractive){ interactives.push({ id:s.id, name:s.name, w:s.width, h:s.height }); }

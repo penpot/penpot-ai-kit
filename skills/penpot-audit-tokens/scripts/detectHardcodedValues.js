@@ -10,7 +10,7 @@ const TOKEN_INDEX = {}; // REPLACE-ME
 
 const typeOf = (p) => p==="fill"||p==="strokeColor" ? "color"
   : p==="borderRadius" ? "borderRadius"
-  : (p==="rowGap"||p==="columnGap") ? "spacing" : "dimension";
+  : (p==="rowGap"||p==="columnGap"||/^padding/.test(p)) ? "spacing" : "dimension";
 
 const exact = []; const near = []; const none = [];
 for (const u of USAGE) {
