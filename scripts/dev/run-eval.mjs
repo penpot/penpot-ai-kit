@@ -48,6 +48,29 @@ if (typeof spec.fixture === "string" && /^fixtures\/[\w.-]+$/.test(spec.fixture)
   if (existsSync(fixturePath)) fixtureText = `(file: ${fixtureText})\n\n` + readFileSync(fixturePath, "utf8");
 }
 
+// Optional scripted fixture: a paste-into-execute_code script (phases tokens → components → verify →
+// teardown) that builds the starting design system deterministically, so the run measures the skill
+// and not how well the agent improvises a fixture.
+let setupBlock = "";
+if (typeof spec.setup === "string") {
+  const setupPath = resolve(dirname(evalPath), "..", spec.setup);
+  if (!existsSync(setupPath)) { process.stderr.write(`setup script not found: ${setupPath}\n`); process.exit(1); }
+  setupBlock = `
+
+### Scripted fixture — run this FIRST, exactly as written
+Paste the script below into execute_code once per phase, changing ONLY the PHASE constant, in this
+order: "tokens", then "components", then (in a NEW call) "verify". Do not rewrite, shorten or "improve"
+it, and do not prefix its names — the brief looks these tokens and components up by their plain
+names. Start the run only when "verify" returns ok: true; if it does not, re-run "components" once and
+verify again, and if it still fails emit the verdict as INCONCLUSIVE. At cleanup, run it with
+PHASE = "teardown".
+
+\`\`\`js
+${readFileSync(setupPath, "utf8")}
+\`\`\`
+`;
+}
+
 const list = (arr, label) => (arr && arr.length)
   ? `\n### ${label}\n` + arr.map((x, i) => `${i + 1}. ${x}`).join("\n") : "";
 
@@ -59,7 +82,7 @@ ${serverLine}## 1. Fixture (set up first, via execute_code, on the CURRENT page)
 ${fixtureText}
 
 If the fixture describes canvas state, build it exactly (idempotently, prefixing every shape name
-with "eval-${spec.id}-"). If it is a brief, treat it as the user's brief.
+with "eval-${spec.id}-"). If it is a brief, treat it as the user's brief.${setupBlock}
 
 ## 2. Run
 Execute the ${target} on that fixture, following its SKILL.md / pipeline end to end.

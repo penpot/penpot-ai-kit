@@ -162,7 +162,7 @@ for (const wf of workflowDirs) {
 }
 
 // ---------- 4. evals ----------
-const EVAL_KEYS = new Set(["id", "skill", "workflow", "fixture", "expected", "pass_criteria", "triggers"]);
+const EVAL_KEYS = new Set(["id", "skill", "workflow", "fixture", "setup", "expected", "pass_criteria", "triggers"]);
 const EXPECTED_KEYS = new Set(["must_detect", "must_create", "must_do", "must_not"]);
 if (existsSync(join(ROOT, "evals/golden"))) {
   for (const f of readdirSync(join(ROOT, "evals/golden")).filter((n) => n.endsWith(".eval.json"))) {
@@ -176,6 +176,7 @@ if (existsSync(join(ROOT, "evals/golden"))) {
     if (!e.skill && !e.workflow) bad(rel, "needs a skill or workflow target");
     if (typeof e.fixture === "string" && /^fixtures\/[\w.-]+$/.test(e.fixture) && !existsSync(join(ROOT, "evals", e.fixture)))
       bad(rel, `fixture file '${e.fixture}' does not exist under evals/`);
+    if (e.setup && !existsSync(join(ROOT, "evals", e.setup))) bad(rel, `setup script '${e.setup}' does not exist under evals/`);
     if (e.triggers) for (const k of Object.keys(e.triggers)) if (!["should", "should_not"].includes(k)) bad(rel, `unknown triggers key '${k}'`);
   }
 }

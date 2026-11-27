@@ -10,6 +10,7 @@ Each `golden/*.eval.json` is:
   "id": "unique-id",
   "skill": "penpot-...",          // or "workflow": "..."
   "fixture": "fixtures/<file>.md | inline brief",
+  "setup": "fixtures/setup/<name>.setup.js",   // optional — scripted fixture run before the skill (see fixtures/README.md)
   "expected": {
     "must_detect": ["..."],        // for audits/reviews
     "must_create": ["..."],        // for generators (artifacts that must exist afterwards)
