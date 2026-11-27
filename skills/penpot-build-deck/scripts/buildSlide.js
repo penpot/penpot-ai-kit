@@ -44,7 +44,8 @@ const tok = (n) => penpotUtils.findTokenByName(n);
 const exceptions = [];
 const bind = (shape, tokenName, props, fallback) => {
   const t = tok(tokenName);
-  if (t) { try { shape.applyToken(t, props); return true; } catch (e) { exceptions.push({ kind: "bind-failed", token: tokenName, props, error: String(e) }); } }
+  // apply only what is not already bound: a re-applied token toggles its binding OFF (gotchas #2)
+  if (t) { try { const todo = props.filter(p => !(shape.tokens && shape.tokens[p] === t.name)); if (todo.length) shape.applyToken(t, todo); return true; } catch (e) { exceptions.push({ kind: "bind-failed", token: tokenName, props, error: String(e) }); } }
   else exceptions.push({ kind: "token-missing", token: tokenName, props });
   if (fallback) fallback();
   return false;
