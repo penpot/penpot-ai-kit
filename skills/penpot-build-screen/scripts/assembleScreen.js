@@ -6,7 +6,7 @@
  *          parent = reorder). Uses a top-level `await` for Board.waitForLayoutUpdate() (gotcha #17) —
  *          if the MCP rejects top-level await, drop that line and read geometry in the NEXT call.
  * Input:   ORDER (section names top->bottom, REPLACE-ME); screen id from storage.bs.screenBoardId or SCREEN_BOARD_ID.
- * Output:  { screen, order, reordered, missing, flipCleared, childrenNow }.
+ * Output:  { screen, order, reordered, missing, layoutWait, flipCleared, childrenNow }.
  * Note:    verify Board.insertChild(index, child) / waitForLayoutUpdate with penpot_api_info("Board") if
  *          unsure (both listed on 2.17 PRE; insertChild-as-reorder behaviour should be confirmed on the
  *          live instance). child.setParentIndex(index) is the alternative used on failure.
@@ -24,7 +24,8 @@ let targetIndex = 0;
 for (const name of ORDER) {
   const child = (screen.children || []).find(c => c.name === name);
   if (!child) { missing.push(name); continue; }
-  const current = (screen.children || []).indexOf(child);
+  // compare by id: every read of `children` returns fresh proxy objects, so indexOf(child) is always -1
+  const current = (screen.children || []).findIndex(c => c.id === child.id);
   if (current !== targetIndex) {
     // insertChild within the same parent reparents in place = reorder; fall back to
     // child.setParentIndex(i) if the call throws. Verify the resulting order in `childrenNow`.
@@ -36,11 +37,15 @@ for (const name of ORDER) {
 }
 
 // gotcha #17: let the layout settle before anything reads geometry
-if (typeof screen.waitForLayoutUpdate === "function") await screen.waitForLayoutUpdate();
+// (short timeout, never fatal: the wait has been seen to hang — gotchas #19 — and nothing below needs it)
+let layoutWait = "skipped";
+if (reordered.length && typeof screen.waitForLayoutUpdate === "function") {
+  try { await screen.waitForLayoutUpdate(5000); layoutWait = "settled"; } catch (e) { layoutWait = "timed out — read geometry in the next call"; }
+}
 
 // gotcha #16: fill-sized children can end up with flipX=true — sweep the whole screen.
 // Canonical helper lives in shared/visual-effects.md.
 const clearFlip = (sh) => { let n = 0; const walk = (s) => { if (s.flipX) { s.flipX = false; n++; } (s.children || []).forEach(walk); }; walk(sh); return n; };
 const flipCleared = clearFlip(screen);
 
-return { screen: screen.id, order: ORDER, reordered, missing, flipCleared, childrenNow: (screen.children || []).map(c => c.name) };
+return { screen: screen.id, order: ORDER, reordered, missing, layoutWait, flipCleared, childrenNow: (screen.children || []).map(c => c.name) };
