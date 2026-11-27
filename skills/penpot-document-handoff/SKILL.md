@@ -2,7 +2,7 @@
 name: penpot-document-handoff
 description: "Document a Penpot design for handoff with a hideable annotation layer BESIDE the design (never on top of it): a context card (goal, business rules, links, status), numbered pins on the UI, matching observation/recommendation notes, optional tooltips. Reuses or proposes an annotation component kit + tokens. NOT for auditing (penpot-audit-*) or renaming layers (penpot-rename-layers). Triggers: 'document this design', 'annotate this screen', 'prepare this for handoff', 'add observation notes', 'create a critique card', 'spec this screen for handoff'."
 disable-model-invocation: false
-version: 0.2.1
+version: 0.3.0
 audiences: [product-designer, design-engineer, design-system]
 mode-default: review
 requires:

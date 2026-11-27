@@ -2,7 +2,7 @@
 name: penpot-audit-accessibility
 description: "Audit a Penpot design against WCAG 2.1/2.2 AA (optionally AAA) and produce a structured severity report: color contrast, touch/target sizes, text alternatives, heading hierarchy, and keyboard/focus order. Proposes fixes — does not auto-apply. Also serves as the Evaluator in the brief-to-screen and brief-to-deck loops (scope:deck = slide contrast rules). Triggers: 'check accessibility', 'accessibility audit', 'WCAG check', 'contrast audit', 'a11y review', 'check color contrast', 'is this accessible'."
 disable-model-invocation: false
-version: 0.3.0
+version: 0.4.0
 audiences: [design-system, product-designer, design-engineer, migration]
 mode-default: suggest
 requires:

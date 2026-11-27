@@ -2,7 +2,7 @@
 name: penpot-rename-layers
 description: "Semantically rename Penpot layers to HTML element names (nav, header, main, section, article, button, input, label, h1-h6, p, ul, li, img) or kebab-case role names, replacing auto-generated names like 'Rectangle 12'. Use to clean up layer naming, prepare a file for handoff, or as a precondition for accessibility audits (heading hierarchy) and design-to-code review (semantic mapping). Triggers: 'rename layers', 'semantic layer names', 'rename to HTML elements', 'clean up layer names', 'fix layer naming', 'add semantic names to layers', 'prepare layers for handoff'."
 disable-model-invocation: false
-version: 0.2.1
+version: 0.3.0
 audiences: [design-system, product-designer, design-engineer, migration]
 mode-default: autofix
 requires:

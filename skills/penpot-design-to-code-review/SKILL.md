@@ -2,7 +2,7 @@
 name: penpot-design-to-code-review
 description: "Review a Penpot design against its implemented code (a source component or Storybook story) and emit a structured DRIFT report. Use when an engineer needs to confirm the build matches the design: extract HTML/CSS from a selection, map its tokens/structure/states to the code component, diff them, and list what each side is missing with severity and a reconciliation. Degrades gracefully to a design-system-token check when no code source is supplied. Triggers: 'design to code review', 'does my code match the design', 'design code parity', 'compare Penpot to my component', 'check this against Storybook', 'extract HTML/CSS from this selection', 'find design drift', 'design implementation diff'."
 disable-model-invocation: false
-version: 0.2.1
+version: 0.3.0
 audiences: [design-engineer]
 mode-default: suggest
 requires:

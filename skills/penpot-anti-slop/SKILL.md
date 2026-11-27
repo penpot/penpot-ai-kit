@@ -2,7 +2,7 @@
 name: penpot-anti-slop
 description: "Opt-in layer that keeps Penpot designs from looking generically AI-generated: a direction step before building, a scored 0–100 slop check of a screen or deck (tree probes + visual review), and reviewed fixes. Triggers: 'avoid the AI look', 'does this look AI-generated', 'anti-slop check', 'make it feel less generic', 'evitar estética IA', '¿parece hecho por IA?'."
 disable-model-invocation: false
-version: 0.1.0
+version: 0.2.0
 audiences: [product-designer, design-system]
 mode-default: suggest
 requires:

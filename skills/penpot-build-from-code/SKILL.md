@@ -2,7 +2,7 @@
 name: penpot-build-from-code
 description: "Translate an existing application page, view, or component code into a Penpot screen that is bound to the existing design system — mapping code styles onto semantic tokens and reusing library components instead of raw shapes. Use when the user has real code/markup and wants it reconstructed in Penpot, section by section, on-system. Triggers: 'build this in Penpot from code', 'turn this React/HTML/CSS into a Penpot screen', 'recreate this view in Penpot', 'port this page to Penpot', 'translate this component to Penpot bound to our tokens', 'code to Penpot'."
 disable-model-invocation: false
-version: 0.3.0
+version: 0.4.0
 audiences: [design-engineer, product-designer]
 mode-default: review
 requires:

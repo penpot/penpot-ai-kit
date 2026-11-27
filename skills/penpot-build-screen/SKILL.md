@@ -2,7 +2,7 @@
 name: penpot-build-screen
 description: "Design production-grade screens in Penpot from a brief, as a senior visual designer — reusing the existing design system (tokens + components) and assembling section by section, never one-shot. Use to create a screen/page/landing/dashboard from a description. NOT for translating existing code (use penpot-build-from-code). Triggers: 'design a dashboard', 'create a landing page', 'design this app screen', 'build a UI from this brief', 'design a settings page', 'mock up a screen in Penpot'."
 disable-model-invocation: false
-version: 0.5.0
+version: 0.6.0
 audiences: [product-designer]
 mode-default: review
 requires:

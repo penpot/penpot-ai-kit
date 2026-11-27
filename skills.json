@@ -1,7 +1,7 @@
 {
   "namespace": "app.penpot.skills",
   "name": "penpot-core-skills",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Centralized agentic design skills for Penpot and the Penpot MCP: token/library foundation, component variants, screen building (from brief and from code), slide decks (1920x1080 boards + playable flows), accessibility and token-governance audits, opt-in anti-slop direction and scoring, design-to-code review, handoff documentation, DESIGN.md extraction, Figma migration, semantic renaming, and a router. Grounded in the real Penpot MCP surface (4 core tools, plus import_image in local mode).",
   "dependencies": {
     "node": ">=22.0.0"
@@ -10,7 +10,7 @@
     {
       "id": "penpot-router",
       "name": "penpot-router",
-      "version": "0.3.1",
+      "version": "0.4.0",
       "path": "skills/penpot-router/SKILL.md",
       "mode": "suggest",
       "audiences": [
@@ -24,7 +24,7 @@
     {
       "id": "penpot-foundations",
       "name": "penpot-foundations",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "path": "skills/penpot-foundations/SKILL.md",
       "mode": "review",
       "audiences": [
@@ -36,7 +36,7 @@
     {
       "id": "penpot-component-factory",
       "name": "penpot-component-factory",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "path": "skills/penpot-component-factory/SKILL.md",
       "mode": "review",
       "audiences": [
@@ -48,7 +48,7 @@
     {
       "id": "penpot-build-screen",
       "name": "penpot-build-screen",
-      "version": "0.5.0",
+      "version": "0.6.0",
       "path": "skills/penpot-build-screen/SKILL.md",
       "mode": "review",
       "audiences": [
@@ -59,7 +59,7 @@
     {
       "id": "penpot-build-from-code",
       "name": "penpot-build-from-code",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "path": "skills/penpot-build-from-code/SKILL.md",
       "mode": "review",
       "audiences": [
@@ -71,7 +71,7 @@
     {
       "id": "penpot-build-deck",
       "name": "penpot-build-deck",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "path": "skills/penpot-build-deck/SKILL.md",
       "mode": "review",
       "audiences": [
@@ -83,7 +83,7 @@
     {
       "id": "penpot-anti-slop",
       "name": "penpot-anti-slop",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "path": "skills/penpot-anti-slop/SKILL.md",
       "mode": "suggest",
       "audiences": [
@@ -95,7 +95,7 @@
     {
       "id": "penpot-document-handoff",
       "name": "penpot-document-handoff",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "path": "skills/penpot-document-handoff/SKILL.md",
       "mode": "review",
       "audiences": [
@@ -108,7 +108,7 @@
     {
       "id": "penpot-audit-accessibility",
       "name": "penpot-audit-accessibility",
-      "version": "0.3.0",
+      "version": "0.4.0",
       "path": "skills/penpot-audit-accessibility/SKILL.md",
       "mode": "suggest",
       "audiences": [
@@ -122,7 +122,7 @@
     {
       "id": "penpot-audit-tokens",
       "name": "penpot-audit-tokens",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "path": "skills/penpot-audit-tokens/SKILL.md",
       "mode": "suggest",
       "audiences": [
@@ -134,7 +134,7 @@
     {
       "id": "penpot-design-to-code-review",
       "name": "penpot-design-to-code-review",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "path": "skills/penpot-design-to-code-review/SKILL.md",
       "mode": "suggest",
       "audiences": [
@@ -145,7 +145,7 @@
     {
       "id": "penpot-migrate",
       "name": "penpot-migrate",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "path": "skills/penpot-migrate/SKILL.md",
       "mode": "review",
       "audiences": [
@@ -156,7 +156,7 @@
     {
       "id": "penpot-rename-layers",
       "name": "penpot-rename-layers",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "path": "skills/penpot-rename-layers/SKILL.md",
       "mode": "autofix",
       "audiences": [
@@ -170,7 +170,7 @@
     {
       "id": "penpot-design-md",
       "name": "penpot-design-md",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "path": "skills/penpot-design-md/SKILL.md",
       "mode": "suggest",
       "audiences": [

@@ -2,7 +2,7 @@
 name: penpot-router
 description: "Thin dispatcher / entry point for any Penpot request. Use FIRST on any Penpot task to ensure high_level_overview ran, read the user's intent, and route to exactly one target skill or workflow (build a screen, build a slide deck, build a design system, audit accessibility, audit tokens, migrate from Figma, rename layers, code review, extract DESIGN.md, etc.). Never mutates the canvas. Triggers: 'work on this Penpot file', 'help me with Penpot', 'I want to design/build/audit/migrate in Penpot', 'where do I start', 'which skill should I use', 'route this request', ambiguous Penpot asks."
 disable-model-invocation: false
-version: 0.3.1
+version: 0.4.0
 audiences: [design-system, product-designer, design-engineer, migration]
 mode-default: suggest
 requires:

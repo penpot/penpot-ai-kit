@@ -2,7 +2,7 @@
 name: penpot-build-deck
 description: "Design a presentation / slide deck in Penpot from a brief, as a senior presentation designer: 1920x1080 slide boards built one slide per call from an approved outline, a committed deck style, varied slide archetypes (cover, agenda, section, content, big-number, comparison, grid, bento, quote, timeline, image-bleed, closing), tokenized, wired into a playable View-mode flow and exportable to PDF. NOT for app screens (use penpot-build-screen). Triggers: 'create a presentation', 'build a slide deck', 'design slides in Penpot', 'pitch deck', 'keynote', 'make slides for this talk', 'turn this outline into slides'."
 disable-model-invocation: false
-version: 0.2.0
+version: 0.3.0
 audiences: [product-designer, design-system]
 mode-default: review
 requires:

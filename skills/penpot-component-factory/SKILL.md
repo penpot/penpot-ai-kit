@@ -2,7 +2,7 @@
 name: penpot-component-factory
 description: "Build and maintain Penpot components with COMPLETE variant matrices — sizes, hierarchies, and all interactive states (default/hover/pressed/focus/disabled) — fully tokenized and correctly named. Use to create a new component with variants, fill in missing states, or normalize an existing component. Triggers: 'create a Button component with variants', 'build component variants', 'add hover/pressed/disabled states', 'make a variant matrix', 'turn this into a component with sizes', 'normalize this component'."
 disable-model-invocation: false
-version: 0.3.0
+version: 0.4.0
 audiences: [design-system, product-designer]
 mode-default: review
 requires:

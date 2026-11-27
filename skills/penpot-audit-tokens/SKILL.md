@@ -2,7 +2,7 @@
 name: penpot-audit-tokens
 description: "Audit a Penpot design for design-system / token GOVERNANCE issues (distinct from accessibility): hardcoded colors where a token exists, off-grid spacing, orphan/unresolved/unused tokens, duplicated values, and detached parts that should be component instances. Produces a severity report and suggests semantic-token swaps. Triggers: 'audit tokens', 'find hardcoded colors', 'token governance', 'check design system consistency', 'find off-grid spacing', 'detect raw values', 'are we using tokens correctly'."
 disable-model-invocation: false
-version: 0.2.1
+version: 0.3.0
 audiences: [design-system, design-engineer]
 mode-default: suggest
 requires:

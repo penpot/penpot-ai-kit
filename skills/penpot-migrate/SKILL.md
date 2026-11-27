@@ -2,7 +2,7 @@
 name: penpot-migrate
 description: "Migrate a Figma design into Penpot with high fidelity: Figma Auto Layout → Penpot flex/grid, Figma Variables → Penpot tokens, Figma component sets → Penpot variants, preserving hierarchy. Reads via the Figma MCP, writes via the Penpot MCP, through an intermediate representation (IR). Degrades to manually-pasted Figma data if the Figma MCP is absent. Triggers: 'migrate from Figma', 'import this Figma file into Penpot', 'move our Figma library to Penpot', 'recreate this Figma design in Penpot', 'Figma to Penpot'."
 disable-model-invocation: false
-version: 0.2.1
+version: 0.3.0
 audiences: [migration]
 mode-default: review
 requires:
