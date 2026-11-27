@@ -30,11 +30,14 @@ if (PHASE === "create") {
   let page = penpotUtils.getPageByName(DECK_NAME);
   const created = !page;
   if (!page) { page = penpot.createPage(); page.name = DECK_NAME; }
-  penpot.openPage(page);                 // async — currentPage updates on the NEXT call (gotcha #15)
+  // openPage returns a promise. On Penpot >= 2.20 awaiting it makes the page active in THIS call; on
+  // older instances currentPage only updates on the next call — which is why PHASE="verify" still runs.
+  let activeNow = false;
+  try { await penpot.openPage(page); activeNow = !!(penpot.currentPage && penpot.currentPage.id === page.id); } catch (e) { activeNow = false; }
   storage.deck.pageId = page.id;
   storage.deck.pageName = DECK_NAME;
   writeLedger({ phase: 1, deckPageId: page.id, deckPageName: DECK_NAME });
-  return { pageId: page.id, pageName: DECK_NAME, created, next: "run this script again with PHASE=\"verify\" before creating any board" };
+  return { pageId: page.id, pageName: DECK_NAME, created, activeNow, next: "run this script again with PHASE=\"verify\" before creating any board" };
 }
 
 if (PHASE === "verify") {

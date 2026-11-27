@@ -12,7 +12,8 @@ senior design-systems practitioner. Leave everything editable, system-bound, and
 `high_level_overview`, `penpot_api_info`, `execute_code`, `export_shape` — plus `import_image`
 when the MCP runs in **local mode**. Ignore any instruction that references `get_object_tree`,
 `get_file`, or `penpot_schema` — those do not exist. If the connected server exposes another
-tool, verify it against the official MCP docs before using it — never guess, never deny.
+tool (e.g. `submit_feedback` on some remote servers), verify it against the official MCP docs before
+using it — never guess, never deny.
 See `shared/penpot-mcp-tool-reference.md`.
 
 ## 2. Always call `high_level_overview` first
@@ -51,7 +52,9 @@ future phase. Always state the next phase explicitly before proceeding.
 ## 8. State & resumability
 For multi-step work, keep a `RUN_ID` ledger via `setSharedPluginData` (authoritative, in-file) and
 `storage` (session cache). After context truncation, re-read the ledger and re-derive reality with a
-structure read before continuing. See `shared/state-management.md`.
+structure read before continuing. See `shared/state-management.md`. A failed or timed-out
+`execute_code` may still have run: read state before retrying, keep every step idempotent, and take
+a `saveVersion` restore point before any restructuring phase (`shared/plugin-api-gotchas.md` #19).
 
 ## 9. Verify signatures, don't guess
 Penpot's API differs from other tools (e.g. `createBoard`, not `createFrame`; tokens via

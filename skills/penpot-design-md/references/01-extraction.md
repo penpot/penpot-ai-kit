@@ -34,8 +34,12 @@ names (`spacing.2`), keep the mapping table.
 **Library colors:** `library.local.colors[]` — dedupe by (`path`||group, name, value). Same short
 name in different groups = different colors (e.g. `background/default` vs `border/default`).
 
-**Theme delta:** for the non-canonical theme set, list only tokens whose resolvedValue differs
-from the canonical one; that list becomes the "Dark/Light delta" subsection.
+**Theme delta:** for the non-canonical theme set, list only tokens whose value differs from the
+canonical one; that list becomes the "Dark/Light delta" subsection. Do **not** compare
+`resolvedValue` across sets: a token in an *inactive* set reports the value resolved from the *active*
+sets (observed on 2.20 — the comparison comes out empty). Resolve the inactive set by hand instead:
+take each token's raw `value`, and when it is a reference (`{color.gray.900}`) follow it to the
+primitive that defines it.
 
 ## Phase 2 — component sampling
 

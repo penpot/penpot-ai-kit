@@ -308,7 +308,7 @@ skills.json          aggregate manifest · .well-known/agent-skills/index.json d
 ```
 
 ### Contributing a skill
-1. Copy the anatomy in `shared/SKILL-template.md` (frontmatter + the 16 sections).
+1. Copy the anatomy in `shared/SKILL-template.md` (frontmatter + the six body sections).
 2. Ground every API call in `shared/penpot-mcp-tool-reference.md` + `shared/plugin-api-gotchas.md`;
    verify unfamiliar members with `penpot_api_info`. Use the real token types in `shared/tokens-schema.json`.
 3. Add an Anti-Rationalization Table and a Token-Aware Brief Contract. If the skill mutates the

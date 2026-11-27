@@ -18,7 +18,9 @@ const DECK_TOKENS = [
   { type: "color",        name: "deck.bg.light",             value: "#F7F7F5" },
   { type: "color",        name: "deck.text.on-dark",         value: "#F5F7FA" },
   { type: "color",        name: "deck.text.on-light",        value: "#15181F" },
-  { type: "color",        name: "deck.text.muted",           value: "#8A93A6" },
+  { type: "color",        name: "deck.text.muted",           value: "#8A93A6" },   // legacy single grey: fails on light (2.9:1)
+  { type: "color",        name: "deck.text.muted-on-dark",   value: "#A3ABBD" },   // 8.2:1 on deck.bg.dark, 7.3:1 on deck.surface.card
+  { type: "color",        name: "deck.text.muted-on-light",  value: "#5A6272" },   // 5.7:1 on deck.bg.light
   { type: "color",        name: "deck.accent",               value: "#4F7CFF" },
   { type: "color",        name: "deck.surface.card",         value: "#161C2E" },
   { type: "color",        name: "deck.surface.glass",        value: "#FFFFFF" },

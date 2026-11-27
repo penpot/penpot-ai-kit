@@ -84,8 +84,10 @@ function makePointer(size) {
 if (missing.includes("Pointer")) {
   const pL = makePointer(40), pS = makePointer(24);
   penpot.currentPage.root.appendChild(pL); penpot.currentPage.root.appendChild(pS);
-  const cL = penpot.library.local.createComponent([pL]); cL.name = "Pointer / L";
-  const cS = penpot.library.local.createComponent([pS]); cS.name = "Pointer / S";
+  // The component takes its name and path from the board ("Pointer / L" -> path "Pointer", name "L").
+  // Assigning the full name again nests the path ("Pointer / Pointer / L") — so it is not re-assigned.
+  const cL = penpot.library.local.createComponent([pL]);
+  const cS = penpot.library.local.createComponent([pS]);
   storage.dh.kit = Object.assign(storage.dh.kit || {}, { pointerLId: cL.id, pointerSId: cS.id });
   created.components.push("Pointer / L", "Pointer / S");
 }

@@ -2,12 +2,14 @@
   "id": "build-screen-direct",
   "skill": "penpot-build-screen",
   "fixture": "fixtures/settings-page.brief.md",
+  "setup": "fixtures/setup/settings-page.setup.js",
   "expected": {
     "must_do": [
       "state the style profile AND a named screen skeleton (shared/design-quality.md §5) at the Phase 0 checkpoint",
       "create the frame with scripts/createScreenFrame.js (idempotent; returns screenBoardId) and checkpoint on its export",
       "build one section per execute_code call, exporting and looking at each before its checkpoint, and report flipCleared per section",
-      "run scripts/assembleScreen.js and scripts/auditScreenQuality.js before the scored critique; boardsWithoutLayout must be empty"
+      "run scripts/assembleScreen.js and scripts/auditScreenQuality.js before the scored critique; boardsWithoutLayout must be empty",
+      "instance the fixture's Button, Input, Select and Toggle components (comp.instance()) instead of redrawing them as raw shapes, and bind to the fixture's existing semantic tokens instead of creating new token sets"
     ],
     "must_create": [
       "a root column-flex Board whose gap and four paddings are bound to spacing tokens on Penpot ≥ 2.17 (or an explicit padding-mirrors-token exception in the report)",
@@ -18,8 +20,22 @@
       "literal gap/padding numbers on the root frame when a spacing token exists",
       "a plain Group used to lay out UI, or absolute x/y positioning of UI elements",
       "hardcoded colors on surfaces",
-      "a named tell from shared/design-quality.md §7 present in the final screen without being reported"
+      "a named tell from shared/design-quality.md §7 present in the final screen without being reported",
+      "a new token set, or a redrawn button/input/select/toggle, when the fixture already provides one (missing tokens are proposed, not silently created)"
     ]
   },
-  "pass_criteria": "Section-by-section build with checkpoints; auditScreenQuality.js pass == true; design-quality report belowThreshold == 0 or weak axes explicitly presented; padding bindings reported as bound or mirrored-with-exception."
+  "pass_criteria": "Section-by-section build with checkpoints; auditScreenQuality.js pass == true; design-quality report belowThreshold == 0 or weak axes explicitly presented; padding bindings reported as bound or mirrored-with-exception.",
+  "triggers": {
+    "should": [
+      "design a settings page for a team workspace",
+      "mock up an analytics dashboard in Penpot",
+      "create a landing page for our new product"
+    ],
+    "should_not": [
+      "recreate this React component in Penpot",
+      "make a pitch deck from this outline",
+      "check this screen for contrast issues",
+      "does this landing look AI-generated?"
+    ]
+  }
 }

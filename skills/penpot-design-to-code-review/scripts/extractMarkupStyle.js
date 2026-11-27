@@ -29,8 +29,11 @@
  */
 
 // ---- opts: leave {} until verified with penpot_api_info ----
-const MARKUP_OPTS = {}; // REPLACE-ME-IF-VERIFIED
-const STYLE_OPTS  = {}; // REPLACE-ME-IF-VERIFIED
+// Verified with penpot_api_info("Penpot", …) on 2.20: generateMarkup(shapes, { type: "html" | "svg" }),
+// generateStyle(shapes, { type: "css", withPrelude?, includeChildren? }). Re-verify if the output looks short.
+const MARKUP_OPTS = { type: "html" };
+const STYLE_OPTS  = { type: "css", includeChildren: true };
+const MAX_NODES = 300;   // cap; `truncated` says when the selection is larger
 
 const sel = penpot.selection || [];
 if (sel.length === 0) {
@@ -59,26 +62,49 @@ function typographyOf(s) {
     letterSpacing: s.letterSpacing ?? null,
   } : null;
 }
+function spacingOf(s) {                        // layout spacing lives on EVERY flex board, not only the root
+  return s.flex ? {
+    dir: s.flex.dir, rowGap: s.flex.rowGap, columnGap: s.flex.columnGap,
+    topPadding: s.flex.topPadding, rightPadding: s.flex.rightPadding,
+    bottomPadding: s.flex.bottomPadding, leftPadding: s.flex.leftPadding,
+  } : null;
+}
 function nodeInfo(s) {
   const boundTokens = s.tokens ? Object.fromEntries(Object.entries(s.tokens)) : {};
   return {
     id: s.id,
     name: s.name,
     type: s.type,
+    parent: (s.parent && s.parent.name) || null,
     boundTokens,                               // { property: tokenName } or {}
     rawFill: colorOf(s),
+    rawStroke: (Array.isArray(s.strokes) && s.strokes[0]) ? { strokeColor: s.strokes[0].strokeColor ?? null, strokeWidth: s.strokes[0].strokeWidth ?? null } : null,
+    spacing: spacingOf(s),
     radius: s.borderRadius ?? null,
     width: s.width, height: s.height,
     typography: typographyOf(s),
   };
 }
 
-// Walk selection + one level of children (shallow; deeper reads via shapeStructure).
-const perNode = [];
-for (const s of sel) {
+// Walk the selection and ALL its descendants — a one-level walk misses labels and icons nested inside
+// rows and wrappers, and with them most of the drift.
+const perNode = []; let truncated = false;
+const walk = (s) => {
+  if (perNode.length >= MAX_NODES) { truncated = true; return; }
   perNode.push(nodeInfo(s));
-  const kids = Array.isArray(s.children) ? s.children : [];
-  for (const k of kids) perNode.push(nodeInfo(k));
+  for (const k of (Array.isArray(s.children) ? s.children : [])) walk(k);
+};
+for (const s of sel) walk(s);
+
+// Reverse index of the file's tokens: "type:VALUE" -> [names]. tokenOverview() only lists names, so the
+// values are read from the sets. Lets the report suggest the token an untokenized value should use.
+const tokenIndex = {};
+for (const set of penpot.library.local.tokens.sets || []) {
+  if (!set.active) continue;                   // an inactive set reports values resolved from the active ones
+  for (const t of set.tokens || []) {
+    const key = `${t.type}:${String(t.resolvedValue).toUpperCase()}`;
+    (tokenIndex[key] = tokenIndex[key] || []).push(t.name);
+  }
 }
 
 // Spacing lives on the container's flex/grid layout, not on leaf shapes.
@@ -102,6 +128,7 @@ if (typeof style === "string" && style.trim().length < 20)
 
 // Cache for resume / later phases (read-only on canvas, so storage only).
 storage.run = storage.run || {};
-storage.run.extracted = { markup, style, perNode, spacing };
+if (truncated) notes.push(`selection has more than ${MAX_NODES} nodes — perNode is truncated; review a smaller selection.`);
+storage.run.extracted = { markup, style, perNode, spacing, tokenIndex, notes };
 
-return { ok: true, count: sel.length, markup, style, perNode, spacing, notes };
+return { ok: true, count: sel.length, nodes: perNode.length, truncated, markup, style, perNode, spacing, tokenTypes: Object.keys(tokenIndex).length, notes };

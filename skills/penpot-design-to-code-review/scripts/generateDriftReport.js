@@ -92,34 +92,48 @@ function contrast(a, b) {
 }
 
 // ---------- build a flat design property table from perNode ----------
+// Zero radius / gap / padding are Penpot defaults, not design decisions: they are not reported.
+const tokenIndex = extracted.tokenIndex || {};
+const suggest = (type, value) => {
+  if (value == null) return null;
+  const types = type === "spacing" ? ["spacing", "dimension"] : [type];
+  for (const t of types) { const hit = tokenIndex[`${t}:${String(value).toUpperCase()}`]; if (hit && hit.length) return hit[0]; }
+  return null;
+};
+const SPACING_PROPS = { rowGap: "rowGap", columnGap: "columnGap", topPadding: "paddingTop", rightPadding: "paddingRight", bottomPadding: "paddingBottom", leftPadding: "paddingLeft" };
 const designProps = [];
 for (const n of extracted.perNode) {
+  const bt = n.boundTokens || {};
   if (n.rawFill && n.rawFill.fillColor) {
-    designProps.push({
-      node: n.name, dimension: "color", property: "fill",
-      designValue: normColor(n.rawFill.fillColor),
-      token: n.boundTokens.fill || n.boundTokens.fills || null,
-    });
+    const v = normColor(n.rawFill.fillColor);
+    designProps.push({ node: n.name, dimension: "color", property: "fill", designValue: v,
+      token: bt.fill || null, matchingToken: suggest("color", v) });
   }
-  if (n.radius != null) {
-    designProps.push({
-      node: n.name, dimension: "radius", property: "borderRadius",
-      designValue: normLen(n.radius), token: n.boundTokens.borderRadius || null,
-    });
+  if (n.rawStroke && n.rawStroke.strokeColor) {
+    const v = normColor(n.rawStroke.strokeColor);
+    designProps.push({ node: n.name, dimension: "color", property: "strokeColor", designValue: v,
+      token: bt.strokeColor || null, matchingToken: suggest("color", v) });
+  }
+  if (n.radius != null && Number(n.radius) !== 0) {
+    const v = normLen(n.radius);                 // radius bindings live on the four corner props
+    designProps.push({ node: n.name, dimension: "radius", property: "borderRadius", designValue: v,
+      token: bt.borderRadiusTopLeft || bt.borderRadiusTopRight || bt.borderRadiusBottomRight || bt.borderRadiusBottomLeft || null,
+      matchingToken: suggest("borderRadius", v) });
   }
   if (n.typography) {
-    designProps.push({ node: n.name, dimension: "typography", property: "fontSize",
-      designValue: normLen(n.typography.fontSize), token: n.boundTokens.fontSize || null });
-    designProps.push({ node: n.name, dimension: "typography", property: "fontWeight",
-      designValue: normWeight(n.typography.fontWeight), token: n.boundTokens.fontWeight || null });
+    const size = normLen(n.typography.fontSize), weight = normWeight(n.typography.fontWeight);
+    designProps.push({ node: n.name, dimension: "typography", property: "fontSize", designValue: size,
+      token: bt.fontSize || bt.typography || null, matchingToken: suggest("fontSizes", size) });
+    designProps.push({ node: n.name, dimension: "typography", property: "fontWeight", designValue: weight,
+      token: bt.fontWeight || bt.typography || null, matchingToken: suggest("fontWeights", weight) });
   }
-}
-if (extracted.spacing) {
-  for (const k of ["rowGap","columnGap","topPadding","rightPadding","bottomPadding","leftPadding"]) {
-    if (extracted.spacing[k] != null) {
-      designProps.push({ node: extracted.spacing.source, dimension: "spacing", property: k,
-        designValue: normLen(extracted.spacing[k]),
-        token: null /* spacing tokens usually bound on layout; record raw + grid */ });
+  if (n.spacing) {
+    for (const k of Object.keys(SPACING_PROPS)) {
+      const raw = n.spacing[k];
+      if (raw == null || Number(raw) === 0) continue;
+      const v = normLen(raw);
+      designProps.push({ node: n.name, dimension: "spacing", property: k, designValue: v,
+        token: bt[SPACING_PROPS[k]] || null, matchingToken: suggest("spacing", v) });
     }
   }
 }
@@ -175,14 +189,15 @@ for (const dp of designProps) {
             (dp.dimension === "spacing" && typeof delta === "number" && Math.abs(delta) >= 8) ||
             (dp.token && codeToken && dp.token !== codeToken)))
     severity = "Major";
-  else if (status === "design-only" || status === "code-only") severity = "Major";
-  else severity = "Minor";
+  else if (CODE_SOURCE !== "none" && (status === "design-only" || status === "code-only")) severity = "Major";
+  else severity = "Minor";   // with no code source every row is design hygiene (references/04): Minor
 
   // hardcoded-value hygiene: no bound token even if value matches
   const notTokenized = (dp.token == null);
 
-  if (status === "match" && !notTokenized) {
-    // still record matches in summary but skip a findings row unless useful
+  const offGrid = dp.dimension === "spacing" && grid4px === false;
+  if ((status === "match" || CODE_SOURCE === "none") && !notTokenized && !offGrid) {
+    // tokenized and (matching, or nothing to compare against): nothing to report
   } else {
     reconciliation =
       status === "design-only" && CODE_SOURCE !== "none"
@@ -194,22 +209,28 @@ for (const dp of designProps) {
       : status === "drift"
         ? `Set code ${dp.property} to ${dp.designValue}${dp.token ? " (token " + dp.token + ")" : ""}.`
       : notTokenized
-        ? `Value ${dp.designValue} on "${dp.node}" is not tokenized; propose a token (penpot-infer-tokens).`
+        ? (dp.matchingToken
+            ? `Value ${dp.designValue} on "${dp.node}" is not tokenized; bind ${dp.matchingToken} (exact match, via penpot-foundations).`
+            : `Value ${dp.designValue} on "${dp.node}" is not tokenized and no token matches; propose one (penpot-foundations).`)
+      : offGrid ? `${dp.property} ${dp.designValue} on "${dp.node}" is off the 4px grid; review.`
       : null;
 
     findings.push({
       id: `drift-${dp.dimension}-${String(++idn).padStart(2, "0")}`,
       dimension: dp.dimension, designNode: dp.node, codeElement: code ? code.codeElement : null,
-      designValue: dp.designValue, codeValue, token: dp.token, codeToken,
+      property: dp.property,
+      designValue: dp.designValue, codeValue, token: dp.token, matchingToken: dp.token ? null : (dp.matchingToken || null), codeToken,
       status, delta, grid4px, wcag,
       severity: (status === "match" && notTokenized) ? "Minor" : severity,
-      reconciliation,
+      reconciliation: (offGrid && reconciliation && !/off the 4px grid/.test(reconciliation)) ? reconciliation + " Also off the 4px grid." : reconciliation,
     });
   }
 }
 
 // ---------- state matrix ----------
-const allStates = Array.from(new Set([
+// With no code source there is no code state list to compare against — an empty list must not turn
+// every design state into a Critical "missing in code" finding.
+const allStates = CODE_SOURCE === "none" ? [] : Array.from(new Set([
   ...(STATE_INPUT.designStates || []), ...(STATE_INPUT.codeStates || []),
 ]));
 const cells = allStates.map(s => ({
@@ -253,6 +274,7 @@ if (extracted.notes && extracted.notes.length) notes.push(...extracted.notes);
 const report = {
   runId: RUN_ID, scope: extracted.perNode.map(n => n.name),
   codeSource: CODE_SOURCE, authoritative: AUTHORITATIVE, rootPxAssumption: ROOT_PX,
+  drift: summary.drift + summary.designOnly + summary.codeOnly,   // what code-to-penpot-sync branches on
   summary, findings,
   stateMatrix: { rows: allStates, cells }, notes,
 };

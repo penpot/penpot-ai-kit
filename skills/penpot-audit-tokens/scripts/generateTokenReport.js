@@ -8,12 +8,13 @@
 const EXACT=[], NEAR=[], NONE=[], OFFGRID=[], UNRESOLVED=[], DUPLICATES=[], UNUSED=[]; // REPLACE-ME
 
 const high=[], med=[], low=[];
-EXACT.forEach(f=>high.push(`[noHardcodedColor] ${f.shape}.${f.property} ${f.current} == ${f.suggestedToken} (exact). Swap available. Confidence: high.`));
+const ruleOf = p => (p==="fill"||p==="strokeColor") ? "noHardcodedColor" : "preferSemantic";   // spacing/radius are not colors
+EXACT.forEach(f=>high.push(`[${ruleOf(f.property)}] ${f.shape}.${f.property} ${f.current} == ${f.suggestedToken} (exact). Swap available. Confidence: high.`));
 UNRESOLVED.forEach(u=>high.push(`[noOrphanTokens] ${u.token} -> unresolved {${u.ref}}. Fix in penpot-foundations.`));
-NEAR.forEach(f=>med.push(`[noHardcodedColor] ${f.shape}.${f.property} ${f.current} ~ ${f.suggestedToken} (near). Review. Confidence: medium.`));
+NEAR.forEach(f=>med.push(`[${ruleOf(f.property)}] ${f.shape}.${f.property} ${f.current} ~ ${f.suggestedToken} (near). Review. Confidence: medium.`));
 OFFGRID.forEach(o=>med.push(`[noOffGridSpacing] ${o.shape}.${o.property} ${o.value} -> ${o.suggest}. Review.`));
 DUPLICATES.forEach(d=>med.push(`[noOrphanTokens] duplicate value ${d.value}: ${d.tokens.join(", ")}. Consolidate.`));
-NONE.forEach(f=>low.push(`[noHardcodedColor] ${f.shape}.${f.property} ${f.current} — no matching token; propose one.`));
+NONE.forEach(f=>low.push(`[${ruleOf(f.property)}] ${f.shape}.${f.property} ${f.current} — no matching token; propose one.`));
 UNUSED.forEach(n=>low.push(`[noOrphanTokens] ${n} unused.`));
 
 const md=[`## Token Governance Audit`,

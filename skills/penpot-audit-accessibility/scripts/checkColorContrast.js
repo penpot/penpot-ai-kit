@@ -2,7 +2,8 @@
  * checkColorContrast.js
  * Purpose: compute WCAG contrast ratios for text fg/bg pairs and flag failures.
  * Usage:   paste into execute_code (Phase 1) after collecting data, or pass PAIRS inline.
- * Input:   PAIRS [{id,name,fg,bg,fontSize}] (e.g. from collectAccessibilityData.js).
+ * Input:   PAIRS [{id,name,fg,bg,fontSize,fontWeight}] (e.g. from collectAccessibilityData.js).
+ *          Large text (3:1) = >= 24px, or >= 18.67px at weight >= 700 (WCAG "18pt / 14pt bold").
  * Output:  { results:[{name, ratio, required, pass}], failures }.
  */
 const PAIRS = []; // REPLACE-ME with texts[] from collectAccessibilityData
@@ -12,7 +13,8 @@ function lum(hex){const c=String(hex||"#000").replace('#','');const v=[0,2,4].ma
 function ratio(a,b){const L1=lum(a),L2=lum(b);const hi=Math.max(L1,L2),lo=Math.min(L1,L2);return (hi+0.05)/(lo+0.05);}
 
 const results = PAIRS.map(p=>{
-  const large = (p.fontSize||0) >= 24;
+  const size = Number(p.fontSize) || 0, weight = Number(p.fontWeight) || 400;
+  const large = size >= 24 || (size >= 18.67 && weight >= 700);
   const required = large ? 3.0 : 4.5;
   // Indeterminate background (no ancestor fill) or missing fg: do NOT fabricate a ratio.
   if (p.bg == null || p.fg == null) {

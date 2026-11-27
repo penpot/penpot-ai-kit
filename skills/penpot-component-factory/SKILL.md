@@ -2,7 +2,7 @@
 name: penpot-component-factory
 description: "Build and maintain Penpot components with COMPLETE variant matrices — sizes, hierarchies, and all interactive states (default/hover/pressed/focus/disabled) — fully tokenized and correctly named. Use to create a new component with variants, fill in missing states, or normalize an existing component. Triggers: 'create a Button component with variants', 'build component variants', 'add hover/pressed/disabled states', 'make a variant matrix', 'turn this into a component with sizes', 'normalize this component'."
 disable-model-invocation: false
-version: 0.3.0
+version: 0.4.0
 audiences: [design-system, product-designer]
 mode-default: review
 requires:
@@ -18,185 +18,107 @@ requires:
 
 # penpot-component-factory — complete, tokenized variants
 
-## 1. Title + How it works
-`penpot-component-factory` builds components and their **full variant matrices**; every mutation goes
-through `execute_code`; validate visually with `export_shape`; read structure with
-`penpotUtils.shapeStructure` (full tool surface: `shared/penpot-mcp-tool-reference.md`).
-It builds a base component as a Board with flex layout (every value tokenized via `penpot-foundations`
-tokens), generates variants across axes, combines them into a variant container
-(`penpotUtils.createVariantContainer` on ≥ 2.17; `penpot.createVariantFromComponents` as the low-level
-fallback), and verifies completeness.
+Build components and their **full variant matrices** as a **senior component engineer**: a base
+component as a flex Board with every value tokenized, one component per matrix cell, the cells grouped
+into a variant container with named axes, and a completeness check at the end.
 
-## 2. The One Rule That Matters Most
-**Every interactive component ships every required state, and every value is a token.** No
-hardcoded fills/spacing; no missing `Hover`/`Pressed`/`Focus`/`Disabled` unless the system explicitly
-says otherwise. Build one variant at a time; checkpoint before combining.
+**The one rule: every interactive component ships every required state, and every value is a token.**
+No missing `Hover` / `Pressed` / `Focus` / `Disabled` unless the system says otherwise; no hardcoded
+fill or spacing. Build one step at a time and checkpoint before grouping.
 
-## 3. Penpot MCP Tool Reference
-Full surface: `shared/penpot-mcp-tool-reference.md`. Key calls:
+Tool surface: `shared/penpot-mcp-tool-reference.md`. API traps: `shared/plugin-api-gotchas.md` (the
+`#n` below). Verify signatures with `penpot_api_info("VariantContainer" | "Variants" | "LibraryComponent")`.
 
-| Call | Why |
-|------|-----|
-| `penpot.createBoard()` + `addFlexLayout()` | base component container |
-| `penpot.library.local.createComponent(shapes)` | turn the base into a component |
-| `shape.clone()` | derive variants from the base |
-| `penpotUtils.createVariantContainer([{ shape, properties }])` | preferred (≥ 2.17): container + axes + values in one call — behind the duplicate-file gate |
-| `penpot.createVariantFromComponents(mainInstances)` | low-level fallback when the helper is absent |
-| `instance.switchVariant(pos, value)` | demonstrate/switch variants (`pos` = index in `variants.properties`) |
-| `export_shape` | visual checkpoint of the matrix |
-
-## 4. Plugin API Essentials
-Gotcha numbers refer to `shared/plugin-api-gotchas.md`.
-- Build the base as a **Board** (`createBoard`, NOT `createFrame`) with `addFlexLayout()`; set `dir`, gaps, padding, `horizontalSizing`/`verticalSizing`.
-- **#4 flex/grid overrides child x/y** — order children by append; use `layoutChild` for per-child sizing/margins.
-- `clone()` duplicates a shape with all properties — the basis for the variant matrix.
-- **#9 variant API** — prefer `penpotUtils.createVariantContainer([{ shape: mainInstance, properties: { Size: "Medium", State: "Default" } }])` (≥ 2.17) behind the duplicate-file gate; the low-level `penpot.createVariantFromComponents(mainInstances)` + `renameProperty`/`addProperty`/`setVariantProperty` path only as fallback. Switch with `instance.switchVariant(pos, value)` — `pos` is the index in `variants.properties`, not the axis name. `Board.combineAsVariants(ids)` is listed by `penpot_api_info` on 2.17 but unverified — do not use.
-- **#6 detach** before mutating an instance's internals — and NEVER on a variant instance (see #12).
-- **#12 variant MUTATION corrupts the file — this skill's critical failure mode.** `setVariantProperty(pos, value)` updates the variant properties but not the variant root's internal `:variant-name`, so the file fails backend referential-integrity validation: from then on **every component-touching mutation is rejected with an HTTP 400 the plugin never surfaces** — calls hang ~30 s, the session dies, unflushed mutations roll back. The same poison applies to `addVariant()` + rename, `comp.instance()` + `detach()` on a variant, `createComponent` on a detached variant instance, and `shape.remove()` on a variant board; recovery is manual. *Reading* variants and instancing a specific variant are safe. **Safe strategy:** build each state as a standalone Board and `createComponent([board])` **one at a time**, named `Component / State`; Phase 3 (§6) carries the duplicate-file / verify-saves / fallback procedure.
-- Verify unfamiliar signatures with `penpot_api_info('VariantContainer')` / `penpot_api_info('Variants')` first.
-
-## 5. Token-Aware Brief Contract
-- **Context** — which design system / token sets are active; component purpose.
-- **Objective** — single component + its variant axes.
+## Brief contract
+- **Context** — the active design system / token sets; what the component is for.
+- **Objective** — one component and its variant axes.
 - **Inputs** — base layout, the token set (`penpot-foundations`), required axes.
-- **Constraints** — all values tokenized; all required states present; naming `Property=Value`.
-- **Acceptance Criteria** — matrix complete; zero hardcoded values; every state legible & AA-contrast; names follow convention.
+- **Constraints** — all values tokenized; all required states present; `Property=Value` naming.
+- **Acceptance Criteria** — matrix complete; zero hardcoded values; every state legible and
+  AA-contrast; names follow the convention.
 
-Act as a **senior component engineer**.
+## Workflow
+Before every ✋ checkpoint that shows visual work, run the export → look → fix loop of
+`shared/visual-self-review.md` (max 2 self-fixes).
 
-## 6. Mandatory Workflow
+**Phase 0 — Discovery.** `high_level_overview`; read tokens (`tokenOverview()`), existing components,
+and `penpot.version` (it decides Phase 3). Choose the axes (`references/01-variant-axes.md`).
+✋ Confirm the axis matrix.
 
-> **Visual self-review (mandatory):** before every ✋ checkpoint that shows visual work,
-> run the export → look → fix loop from `shared/visual-self-review.md` — export the unit you
-> just built, inspect the image yourself against the checklist, fix visible defects (max 2
-> iterations), and present that same export with any remaining defects named.
+**Phase 1 — Base.** `scripts/buildComponentBase.js`: a flex Board with fill, radius, gap and padding
+bound to tokens, registered with `createComponent` (`references/02-flex-grid-layout.md`). Missing
+tokens come back in `exceptions` — propose them, do not hide them. ✋ Review the base export.
 
-**Phase 0 — Discovery.** `high_level_overview`; read tokens (`tokenOverview()`) and existing components. Decide axes (`references/01-variant-axes.md`). ✋ Checkpoint: confirm the axis matrix.
+**Phase 2 — One component per cell.** `scripts/createVariants.js` clones the base for each cell,
+**detaches the clone** (a clone of a main instance is a component copy — registering it as-is wraps it
+in a layout-less board), registers it as its own component and applies that state's tokens
+(`tokens: { fill, text, stroke }`). Tokens it cannot find come back in `missingTokens`: propose them.
+A state that adds something the base lacks (a focus ring) is built by hand and reported. Verify
+bindings in the next call. ✋ Review the cells.
 
-**Phase 1 — Base.** Build the base Board with flex layout, tokenized (`scripts/buildComponentBase.js`), then `createComponent`. ✋ Checkpoint: review base (`export_shape`).
+**Phase 3 — Group, name axes, organize.** Version-gated (#12). `scripts/createVariantGroup.js` reads
+`penpot.version`:
+- **≥ 2.20.0** — takes a restore point (`saveVersion("before variants — …")`) and groups.
+- **older** — returns `{ halted: true }` unless `storage.cf.fileDuplicatedConfirmed === true` (set it
+  only after the user duplicated the file and accepted the risk); otherwise use the fallback.
 
-**Phase 2 — Variants as components.** For each matrix cell, clone the base, retokenize per state, and
-**`createComponent` it** — `createVariantFromComponents` needs a component *per* variant. Use
-`scripts/createVariants.js` (collects each cell's main-instance id). ✋ Checkpoint: review the cells.
+It prefers `penpotUtils.createVariantContainer([{ shape: mainInstance, properties }])` (path
+`"helper"`) and falls back to `penpot.createVariantFromComponents` + `renameProperty` / `addProperty` /
+`setVariantProperty` (path `"legacy"`); `references/03-variant-api.md`. It clears the container's fill
+(#11), gives it a flex layout, and returns `{ containerId, path, properties, components, restorePoint,
+validation, next }`. In the *next* call read `penpot.currentFile.validate()` and each component's
+`variantError`: anything non-empty → stop, report, offer the restore point. Once grouped, every variant
+is simply named after the component — the `Property=Value` pairs live in `variantProps`. The standalone
+base component from Phase 1 is now redundant: ask before removing it. ✋ Review the container.
 
-**Phase 3 — Group, name axes, organize.** ⚠️ **HIGH-RISK PHASE — read `shared/plugin-api-gotchas.md`
-#12 first.** Mutating variant components (`setVariantProperty`, axis renames, detaching/removing
-variants) has **corrupted files and hung all subsequent saves** in live sessions (the backend rejects
-every save with an unsurfaced HTTP 400). Before this phase: ✋ Checkpoint — ask the user to **duplicate
-the file** (or confirm they accept the risk on a scratch file). Then apply **one** variant mutation,
-verify the file still saves (a later read-only call must succeed and persist), and only then continue.
-If any call hangs ~30 s, **stop immediately** and switch to the fallback below.
+**Fallback (below 2.20, or a failed integrity check).** Skip the container. Keep the Phase 2 cells as
+standalone components named `Component / Axis=Value, …`, arranged in a labeled grid; Penpot groups
+them by the `/` prefix and the user can convert them to variants in the UI.
 
-The variant flow: `scripts/createVariantGroup.js` is **gated** — it returns `{ halted: true }` unless
-`storage.cf.fileDuplicatedConfirmed === true` (set it in a prior call only after the user duplicated the
-file and confirmed saves work). It then prefers
-`penpotUtils.createVariantContainer(records.map(r => ({ shape: main, properties: r.properties })))`
-(path `"helper"`, ≥ 2.17: axes + values in one call), falling back to `penpot.createVariantFromComponents`
-+ `renameProperty`/`addProperty`/`setVariantProperty` (path `"legacy"`, kept verbatim in the script).
-Either way it clears the container fill (#11), **gives the container a flex layout** (variants stack at
-the same spot otherwise: `container.flex || container.addFlexLayout()`; row, gaps, padding, `wrap`) and
-returns `{ containerId, path, properties, components, next }`. **Save verification:** after the call,
-make a trivial change in the Penpot UI and confirm it persists before any further mutation — a ~30 s
-hang means the file is poisoned; discard the duplicate and switch to the fallback below. ✋ Checkpoint.
+**Phase 4 — Validate.** `scripts/validateComponent.js` reads the variants API (or `Axis=Value` names in
+the fallback): every required state present, no raw fill / stroke / radius / gap / padding on a cell or
+its children, PascalCase properties, no `variantError`, clean `validate()`; optionally `scripts/switchVariantDemo.js`. Then the structured report.
 
-**Fallback (always safe):** skip the variant container entirely. Keep the per-cell components from
-Phase 2 as standalone components named `Component / Axis=Value, …` (e.g. `Button / Size=Medium,
-State=Hover`), created **one at a time** with a flush pause between calls, arranged in a labeled grid.
-Penpot groups them by the `/` prefix and the user can convert them to real variants in the UI later.
+## Rules
+1. **States:** `Default / Hover / Pressed / Focus / Disabled` for every interactive component unless
+   the system says otherwise — a missing state is an acceptance failure, not a follow-up.
+2. **Zero hardcoded values.** Bind to semantic (or component) tokens; a state without a token gets a
+   proposed one (`color.action.primary.hover.bg`), never a literal hex.
+3. **Token binding (#2).** Verify in a later call; guard every apply (`shape.tokens[prop] !== tok.name`)
+   — a clone inherits the base's bindings, so re-applying the same token to the `Default` cell would
+   remove it.
+4. **Variant mutation is version-gated (#12)** — restore point + `validate()` on ≥ 2.20; fallback or a
+   user-made duplicate below it. On ≤ 2.16 it corrupted files.
+5. **Naming:** component PascalCase (`Button`); variants `Property=Value` in PascalCase (`Size=Medium`,
+   `State=Hover`); internal layers semantic (`label`, `icon`). A component created as `Group / Name` is
+   stored with `name === "Name"` — match on the last segment.
+6. **Flex Boards only** (`createBoard`, not `createFrame`); order children by append, size them through
+   `layoutChild` after appending (#4, #15); absolute positioning only with `layoutChild.absolute` and a
+   stated reason.
+7. **The variant container gets a flex layout** — variants stack on one spot otherwise — and a cleared
+   fill (#11).
+8. **Keep the matrix as small as the design language uses.** Standard axes: `Size = Small | Medium |
+   Large`, `Hierarchy = Primary | Secondary | Tertiary`, `State = …`, `Icon = None | Left | Right`.
+9. **Idempotent.** Never duplicate an existing component or variant; `switchVariant(pos, value)` takes
+   the property *index*, not its name. Do not use `Board.combineAsVariants` (listed, never verified).
+10. **Detach only when necessary, and report it** (`references/04-instance-swap-detach.md`).
 
-**Phase 4 — Validate.** `scripts/validateComponent.js` — every required state present, all values tokenized, naming correct. Optional `scripts/switchVariantDemo.js` to prove switching. Report.
+More excuses and countermeasures: `references/05-anti-rationalization.md`. Failures and fixes:
+`references/06-error-recovery.md`.
 
-## 7. Critical Rules
-1. All interactive components include `Default/Hover/Pressed/Focus/Disabled` unless the system says otherwise.
-2. Zero hardcoded values — bind to semantic (or component) tokens.
-3. Variant property/value names: `Property=Value`, PascalCase (`Size=Medium`, `State=Hover`).
-4. Build as a flex Board; never absolute-position children unless `layoutChild.absolute`.
-5. Idempotent: don't duplicate an existing variant.
-6. Detach only when necessary, and report it — **never** detach a variant instance (gotchas #12).
-7. After grouping, give the variant container a flex layout — variants stack at the same position otherwise.
-8. Variant mutation is a known file-corruption risk (gotchas #12): duplicate the file before Phase 3,
-   verify saves after the first mutation, and fall back to standalone `Component / State` components
-   if anything hangs.
-
-## 8. Domain Architecture
-Standard axes:
-- `Size = Small | Medium | Large`
-- `Hierarchy = Primary | Secondary | Tertiary`
-- `State = Default | Hover | Pressed | Focus | Disabled`
-- `Icon = None | Left | Right`
-
-The matrix is the Cartesian product you need — keep it as small as the system allows (don't generate
-combinations the design language doesn't use). Each variant is a cloned base with state-specific
-**token** bindings.
-
-## 9. Modes & Policies
-Default **review**. Variant/component restructuring and `detach()` are **never** auto-applied
+## Mode and state
+Mode **review**: component and variant restructuring and `detach()` are never auto-applied
 (`shared/modes-and-policies.md`).
 
-## 10. State Management
-Ledger keys under `RUN_ID`: `phase`, `baseComponentId`, `created:[{variant:'Size=Medium,State=Hover', id}]`. Re-derive with a component read after truncation.
+Ledger under `RUN_ID` (`shared/state-management.md`): `phase`, `baseComponentId`,
+`created: [{ variant: "Size=Medium,State=Hover", id }]`, `restorePoints`, `exceptions`. After
+truncation, re-read the components before continuing.
 
-## 11. User Checkpoints
-| After phase | Artifacts shown | What we ask |
-|-------------|-----------------|-------------|
-| 0 | proposed axis matrix | Approve axes? |
-| 1 | base `export_shape` | Approve base? |
-| 2 | variant grid `export_shape` | Approve variants? |
-| 3 | variant container | Approve combine? |
-
-## 12. Naming Conventions
-`shared/naming-conventions.md`: component PascalCase (`Button`); variant `Property=Value`; internal
-layers semantic (`label`, `icon`, `button`).
-
-## 13. Anti-Rationalization Table
-| Excuse | Why it's wrong | Countermeasure (halt) |
-|--------|----------------|------------------------|
-| "I'll add hover/disabled later." | Incomplete components ship broken states. | All required states are acceptance gates; build them now. |
-| "A plain rectangle is fine for this state." | Hardcoded shapes drift from the system. | Clone the base and bind state tokens. |
-| "I'll hardcode the hover color." | Breaks theming and governance. | Use/propose a semantic token (`color.action.primary.hover.bg`). |
-| "Absolute-position the icon, it's easier." | Fights flex; breaks resizing. | Use flex order + `layoutChild`; absolute only with `layoutChild.absolute` and a reason. |
-| "I'll assume the variant-creation method/args." | Variant API is easy to get wrong. | Prefer `penpotUtils.createVariantContainer`; low-level `createVariantFromComponents` only when the helper is absent; verify with `penpot_api_info('Variants')`. Never `combineAsVariants` (unverified). |
-| "Variant mutation worked once — I'll batch the rest in one call." | One bad `setVariantProperty` poisons the file silently; every later save hangs (gotchas #12). | One mutation → verify saves persist → continue. On any ~30 s hang, stop and use the standalone-components fallback. |
-
-## 14. Helper Code Snippets
-```js
-// Base as a flex Board (Phase 1) — gaps/fill/padding bound to tokens (padding binds on ≥ 2.17; mirror + exception on 2.16.x, gotchas #8)
-const board = penpot.createBoard();
-board.name = "Button";
-const flex = board.addFlexLayout();
-flex.dir = "row";
-flex.horizontalSizing = "auto"; flex.verticalSizing = "auto";
-
-// gap binds to a token; padding binds on Penpot ≥ 2.17 — try applyToken per side, fall back to the RESOLVED value + a padding-mirrors-token exception
-const gapTok = penpotUtils.findTokenByName("spacing.inset.sm");   // or propose it at the checkpoint
-if (gapTok) board.applyToken(gapTok, ["columnGap"]);
-const padY = penpotUtils.findTokenByName("spacing.8");
-const padX = penpotUtils.findTokenByName("spacing.16");
-penpot.currentPage.root.appendChild(board);                                     // append before binding layout props
-const exceptions = [];
-for (const [tok, sides, fallback] of [[padY, ["paddingTop", "paddingBottom"], 8], [padX, ["paddingLeft", "paddingRight"], 16]]) {
-  for (const side of sides) {
-    try { if (tok) board.applyToken(tok, [side]); else throw new Error("token missing"); }
-    catch { flex[side.replace("padding", "").toLowerCase() + "Padding"] = tok ? Number(tok.resolvedValue) : fallback; exceptions.push({ kind: "padding-mirrors-token", token: tok && tok.name, side }); }
-  }
-}
-
-// FILL POLICY: a button is a SURFACE — bind its bg token (never a literal, never the default white)
-board.fills = [];
-const bgTok = penpotUtils.findTokenByName("color.action.primary.bg");
-if (bgTok) board.applyToken(bgTok, ["fill"]);
-
-const label = penpot.createText("Button");
-board.appendChild(label);
-const comp = penpot.library.local.createComponent([board]);
-return { component: comp.name, id: comp.mainInstance().id, exceptions };
-```
-
-## 15. Reference Resources
-- `penpot_api_info('Board')`, `penpot_api_info('VariantContainer')`, `penpot_api_info('Variants')`, `penpot_api_info('LibraryComponent')`.
-
-## 16. Supporting Files
-**references/**: `01-variant-axes.md`, `02-flex-grid-layout.md`, `03-variant-api.md`, `04-instance-swap-detach.md`, `05-anti-rationalization.md`, `06-error-recovery.md`.
-**scripts/**: `buildComponentBase.js`, `createVariants.js` (one component per cell), `createVariantGroup.js` (gated; helper ≥ 2.17 or legacy path), `switchVariantDemo.js`, `validateComponent.js`.
+## Supporting files
+- **references/** — `01-variant-axes.md`, `02-flex-grid-layout.md`, `03-variant-api.md`,
+  `04-instance-swap-detach.md`, `05-anti-rationalization.md`, `06-error-recovery.md`.
+- **scripts/** (paste into `execute_code`) — `buildComponentBase.js`, `createVariants.js` (one
+  component per cell), `createVariantGroup.js` (version-gated), `switchVariantDemo.js`,
+  `validateComponent.js`.
 
 **Doctrine paths.** `shared/…` and `policies/…` resolve inside this bundle in native installs (vendored by the installer); in a Claude Code plugin install they live at the plugin root — `${CLAUDE_PLUGIN_ROOT}/shared/…`, two directories up from this file.

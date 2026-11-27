@@ -14,4 +14,4 @@ Turn a loose request into a buildable plan before touching the canvas.
 - Open questions / assumptions to confirm at the Phase 0 checkpoint.
 
 A vague brief ("make it nice") is converted into Context / Objective / Inputs / Constraints /
-Acceptance Criteria (see SKILL.md §5) before building.
+Acceptance Criteria (see the Brief contract in SKILL.md) before building.

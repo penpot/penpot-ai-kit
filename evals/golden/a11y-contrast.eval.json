@@ -12,5 +12,17 @@
       "claiming a pass without computing the ratio"
     ]
   },
-  "pass_criteria": "Report lists both issues with severity, computed ratio, required threshold, a concrete fix, and confidence; no canvas mutation occurs."
+  "pass_criteria": "Report lists both issues with severity, computed ratio, required threshold, a concrete fix, and confidence; no canvas mutation occurs.",
+  "triggers": {
+    "should": [
+      "is the text on this card readable enough for WCAG AA?",
+      "review this checkout screen for accessibility problems",
+      "are these tap targets large enough?"
+    ],
+    "should_not": [
+      "find hardcoded hex values in this file",
+      "does this look AI-generated?",
+      "rename these layers"
+    ]
+  }
 }

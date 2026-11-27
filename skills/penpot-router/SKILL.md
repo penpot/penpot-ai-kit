@@ -2,7 +2,7 @@
 name: penpot-router
 description: "Thin dispatcher / entry point for any Penpot request. Use FIRST on any Penpot task to ensure high_level_overview ran, read the user's intent, and route to exactly one target skill or workflow (build a screen, build a slide deck, build a design system, audit accessibility, audit tokens, migrate from Figma, rename layers, code review, extract DESIGN.md, etc.). Never mutates the canvas. Triggers: 'work on this Penpot file', 'help me with Penpot', 'I want to design/build/audit/migrate in Penpot', 'where do I start', 'which skill should I use', 'route this request', ambiguous Penpot asks."
 disable-model-invocation: false
-version: 0.3.1
+version: 0.4.0
 audiences: [design-system, product-designer, design-engineer, migration]
 mode-default: suggest
 requires:
@@ -16,259 +16,126 @@ requires:
 
 # penpot-router — the dispatcher
 
-## 1. Title + How it works
-`penpot-router` is a **thin entry point**. It does not draw, tokenize, or restructure anything — it
-reads the user's intent and hands off to exactly one downstream skill or workflow (build a screen, build a
-slide deck, build a design system, audit, migrate, extract DESIGN.md, …). Every mutation goes
-through `execute_code`; validate visually with `export_shape`; read structure with
-`penpotUtils.shapeStructure` (full tool surface: `shared/penpot-mcp-tool-reference.md`). This skill only
-ever uses `high_level_overview` plus **read-only** `execute_code` discovery calls (`penpotUtils.shapeStructure`,
-`penpotUtils.tokenOverview()`). Every mutation belongs to the skill it routes to; this router
-validates nothing visually because it changes nothing. If the host client already auto-selects skills
-by their `description`, this router **degrades gracefully to documentation** — the intent taxonomy in
-`references/01-intent-taxonomy.md` becomes a reference map rather than an active dispatcher.
+The router decides **which one skill or workflow** handles a Penpot request and hands it a clean
+brief. It is read-only: it calls `high_level_overview` and read-only `execute_code` discovery, and
+nothing else — no mutation, no `export_shape`. Everything after the handoff belongs to the target.
 
-## 2. The One Rule That Matters Most
-**Route to exactly one target, and run preflight before doing so.** Never start mutating from inside
-the router, and never fan a single request out to multiple mutating skills in parallel. One request →
-one preflight (overview + a quick structure/token read) → one target skill or workflow → handoff.
-If intent is ambiguous between two targets, ask one disambiguating question; do not guess and act.
+**The one rule: one preflight → one target → handoff.** Never start building from here, and never fan
+a request out to two mutating skills. If the host client already picked a skill by its description, do
+not re-dispatch: step aside and use the table below only as a map.
 
-## 3. Penpot MCP Tool Reference
-Full surface: `shared/penpot-mcp-tool-reference.md`. The router leans on only two calls:
+## Workflow
 
-| Call | Why the router uses it |
-|------|------------------------|
-| `high_level_overview` | Mandatory session preamble. Must have been called before any routing decision is acted on. |
-| `execute_code` (read-only) | `penpotUtils.shapeStructure(penpot.currentPage.root, 2)` and `penpotUtils.tokenOverview()` to sense the current state of the file so routing is grounded in reality, not assumptions. |
-
-The router never calls `execute_code` to create/modify/delete, and never calls `export_shape`
-(nothing to validate). Downstream skills own all mutation and validation.
-
-## 4. Plugin API Essentials
-The router touches only read paths: `penpot.currentPage`, `penpot.selection`,
-`penpot.library.local.tokens`, `penpotUtils.shapeStructure`, `penpotUtils.tokenOverview`,
-`penpotUtils.getPages`. Gotchas (`shared/plugin-api-gotchas.md`):
-- **#2 token application is async (~100 ms)** — never read back a resolved value as authoritative; the
-  router applies no tokens at all, so its only real trap is **doing too much**.
-If you are unsure whether a discovery helper exists with a given signature, verify with
-`penpot_api_info` (e.g. `penpot_api_info("PenpotUtils", "shapeStructure")`) rather than guessing.
-
-## 5. Token-Aware Brief Contract
-Before routing, restate the request as a compact contract so the chosen skill inherits a clean brief.
-Assign the role: **"act as a senior design-systems triage lead who never starts work in the wrong
-flow."** Capture:
-
-- **Context** — product, audience, and whether a design system already exists in this file (derived
-  from `tokenOverview()` + `shapeStructure`).
-- **Objective** — a *single* verb-led intent ("build a settings screen", "audit contrast", "migrate
-  the Figma button library"). If the user states two, split and route the primary; queue the rest.
-- **Inputs** — selected shapes/boards, target page, referenced tokens/components, external refs (code
-  paths, Figma URLs).
-- **Constraints** — forbidden components, inviolable rules, mode (suggest/review/autofix), scope caps.
-  If the user already said whether to avoid the generic-AI look, forward it as `antiSlop: on|off` —
-  the build skill then stores it and skips its opt-in question. The router never asks it itself.
-- **Acceptance Criteria** — what "done" means for the downstream skill (e.g. "WCAG AA contrast ≥ 4.5:1
-  on body text", "all spacing on the 4px grid", "variant matrix complete for State axis"). The router
-  does not verify these; it forwards them so the target skill can.
-
-The router emits this contract as the handoff payload. It does not invent token values or names — if
-the request implies new tokens, that is the downstream skill's job (and a human approval gate).
-
-## 6. Mandatory Workflow
-
-### Phase 0 — Discovery (read-only)
-**Goal:** ensure the session is initialized and the file's state is known.
-1. Confirm `high_level_overview` has been called this session; if not, call it now.
-2. One read-only `execute_code` call for a shallow state sense:
+### Phase 0 — Preflight (read-only, no checkpoint)
+1. Make sure `high_level_overview` ran this session; if unsure, call it. If more than one Penpot MCP
+   server is connected, the target skill must confirm the instance before it mutates (AGENTS.md §2).
+2. One read for file and selection state:
    ```js
    return {
+     version: penpot.version,
+     file: penpot.currentFile && penpot.currentFile.name,   // null on the dashboard: ask which file
      pages: penpotUtils.getPages().map(p => p.name),
      currentPage: penpot.currentPage && penpot.currentPage.name,
-     selectionCount: penpot.selection.length,
      selection: penpot.selection.map(s => ({ id: s.id, name: s.name, type: s.type })),
-     topLevel: penpotUtils.shapeStructure(penpot.currentPage.root, 1)
+     topLevel: penpot.currentPage && penpotUtils.shapeStructure(penpot.currentPage.root, 1)
    };
    ```
-3. One read-only call for token state:
+3. One read for design-system state. `tokenOverview()` returns `{ [setName]: { [tokenType]: string[] } }`
+   — there is no count field, so count it:
    ```js
-   return penpotUtils.tokenOverview();
+   const ov = penpotUtils.tokenOverview() || {};
+   const tokenCount = Object.values(ov).reduce(
+     (n, byType) => n + Object.values(byType || {}).reduce((m, names) => m + (names ? names.length : 0), 0), 0);
+   return {
+     hasTokens: tokenCount > 0, tokenCount, sets: Object.keys(ov),
+     components: penpot.library.local.components.length,
+     connectedLibraries: penpot.library.connected.map(l => l.name)
+   };
    ```
-**Exit criterion:** you know (a) whether tokens/sets exist, (b) what is selected, (c) the page layout
-at depth 1. **✋ Checkpoint:** none needed — read-only — proceed straight to Phase 1.
+   No local tokens but a connected library → a system probably exists there; say so in the brief
+   instead of routing to a bootstrap.
 
-### Phase 1 — Intent classification
-**Goal:** map the user's words to one row of the routing table (§8 / `references/01-intent-taxonomy.md`).
-Read the literal request, combine it with the Phase 0 state (e.g. "no tokens exist yet" biases a vague
-"set up my design system" toward `penpot-foundations` / the `design-system-bootstrap` workflow). If the
-request maps cleanly to one target, continue. If it maps to two or more with comparable confidence,
-**✋ Checkpoint:** ask one disambiguating question (offer the two candidate targets in plain language).
+Details and how to read the results: `references/02-preflight-overview.md`.
 
-### Phase 2 — Handoff
-**Goal:** transfer control with a clean brief.
-1. State the chosen target explicitly ("Routing to **penpot-build-screen** because…").
-2. Emit the §5 Token-Aware Brief Contract as the payload.
-3. Note any secondary intents queued for later.
-4. Invoke / instruct the target skill. The router's job ends here; it performs no mutations.
-**Exit criterion:** exactly one target named, contract emitted, secondary intents queued.
-**✋ Checkpoint (conditional):** ask "Routing to X — confirm or redirect?" **only** when (a) Phase 1
-was ambiguous (two candidates with comparable confidence), or (b) the target is an expensive mutating
-flow on a file with existing content (a migration, a bootstrap over a mature system, anything that
-will restructure components). For a clean, unambiguous match, **state the route and proceed** — the
-target skill's own Phase-0 checkpoint is the user's natural review point; a second confirmation here
-is friction, not safety.
+### Phase 1 — Classify
+Match the request against the routing table, using Phase 0 to break ties (an empty file biases "set
+up my design system" toward `design-system-bootstrap`; a mature one toward extending it). Full
+phrasing map, tie-breakers, multi-intent splitting and fallbacks: `references/01-intent-taxonomy.md`.
+- One clear match → continue.
+- Two comparable matches → ✋ ask **one** question offering the candidates in plain language.
+- Several intents in one request → route the primary, queue the rest.
 
-## 7. Critical Rules
-1. **Always confirm `high_level_overview` ran before acting on a route.** No routing decision is
-   executed in a session where the overview was skipped.
-2. **One target per request.** Split multi-intent requests; route the primary, queue the rest.
-3. **Read-only only.** The router never calls a mutating `execute_code` and never calls `export_shape`.
-4. **No guessing on ambiguity.** Two plausible targets → one question, not a coin flip.
-5. **Ground the route in file state.** Use Phase 0 reads to break ties (empty file vs. mature system).
-6. **Forward the brief verbatim.** Do not silently drop constraints or acceptance criteria.
-7. **Degrade to documentation.** If the host already routes by description, do not duplicate-dispatch;
-   serve the taxonomy as a map and step aside.
-8. **Default mode = suggest.** The router proposes a route; it owns no canvas changes.
+### Phase 2 — Hand off
+State the route and why ("Routing to **penpot-build-screen** because…"), emit the brief contract
+below, list queued intents, and invoke the target. For a clean match, state the route and proceed —
+the target's own first checkpoint is the user's review point. ✋ Ask "confirm or redirect?" only when
+Phase 1 was ambiguous or the target is an expensive mutating flow over existing content (a migration,
+a bootstrap over a mature system, component restructuring).
 
-## 8. Domain Architecture — the routing table
-The router's product is a **decision**, not a canvas artifact. The decision space is the table below.
-Full phrasing map and fallbacks: `references/01-intent-taxonomy.md`.
+## Routing table
 
-### Skills
+| Intent | Target |
+|--------|--------|
+| Tokens, scales, themes, tokenize a hardcoded file | `penpot-foundations` |
+| Components, variants, interactive states | `penpot-component-factory` |
+| A screen/page/dashboard from a brief | `penpot-build-screen` |
+| A screen from existing code or markup | `penpot-build-from-code` |
+| A presentation / slide deck | `penpot-build-deck` |
+| Annotate or document a design for handoff | `penpot-document-handoff` |
+| Accessibility / WCAG / contrast audit | `penpot-audit-accessibility` |
+| Hardcoded values, off-grid spacing, token governance | `penpot-audit-tokens` |
+| Does the design match the code (drift) | `penpot-design-to-code-review` |
+| A portable DESIGN.md spec file | `penpot-design-md` |
+| Import or migrate from Figma | `penpot-migrate` |
+| Does it look AI-generated / make it less generic | `penpot-anti-slop` |
+| Rename layers semantically | `penpot-rename-layers` |
 
-| Intent | Target skill | Example user phrasings |
-|--------|--------------|------------------------|
-| Establish tokens / foundations (color, spacing, type, radius scales; themes) | `penpot-foundations` | "set up our design tokens", "create a color + spacing scale", "add a dark theme", "bootstrap foundations" |
-| Build / extend reusable components & variants | `penpot-component-factory` | "make a Button component with variants", "build an Input with states", "turn this into a component", "add a Size axis" |
-| Assemble a screen/view from brief + existing system | `penpot-build-screen` | "design a settings screen", "lay out a dashboard", "build the pricing page from this brief" |
-| Build a screen/view from code/markup | `penpot-build-from-code` | "create this React page in Penpot", "push this component's JSX to a board", "build the screen to match this code" |
-| Design a presentation / slide deck from a brief | `penpot-build-deck` | "create a presentation", "build a slide deck", "pitch deck", "make slides for this talk", "turn this outline into slides" |
-| Document/annotate a design for handoff | `penpot-document-handoff` | "document this design", "annotate this screen", "prepare this for handoff", "add observation notes", "create a critique card", "explain this flow for devs" |
-| Accessibility audit (WCAG) | `penpot-audit-accessibility` | "check accessibility", "WCAG AA audit", "contrast check", "are touch targets big enough", "a11y review" |
-| Token governance audit | `penpot-audit-tokens` | "find hardcoded colors", "audit token usage", "what's off the 4px grid", "find orphan/unused tokens" |
-| Compare design vs. code (drift) | `penpot-design-to-code-review` | "does this design match the code", "design-to-code review", "find drift between Penpot and the component" |
-| Extract a portable DESIGN.md spec from the file | `penpot-design-md` | "generate a DESIGN.md", "export our design guidelines as markdown", "style guide file for our coding agent" |
-| Import / migrate from Figma | `penpot-migrate` | "migrate this Figma file", "import from Figma", "bring our Figma library into Penpot" |
-| Check / steer a design away from the generic-AI look | `penpot-anti-slop` | "does this look AI-generated", "anti-slop check", "make it feel less generic", "¿parece hecho por IA?", "evita la estética IA" |
-| Rename layers semantically | `penpot-rename-layers` | "rename these layers", "clean up layer names", "semantic HTML layer names", "fix Rectangle 12 names" |
+| Multi-skill intent | Target workflow |
+|--------------------|-----------------|
+| "Where do I start" / no clear target | `routing` |
+| Full design system from scratch or from code | `design-system-bootstrap` |
+| Brief → built and validated screen | `brief-to-screen` |
+| Brief → built and validated, playable deck | `brief-to-deck` |
+| Keep Penpot and the codebase in sync | `code-to-penpot-sync` |
+| Whole Figma project migration | `figma-migration` |
+| Block handoff until accessibility passes | `accessibility-gate` |
 
-### Workflows (multi-skill orchestrations)
+Each workflow is a `README.md` + `pipeline.json` under `workflows/` (see Supporting files).
 
-| Intent | Target workflow | Example user phrasings |
-|--------|-----------------|------------------------|
-| Decide where to start (meta) | `routing` | "I don't know which tool I need", "where do I begin", "help me with this Penpot file" |
-| End-to-end design system from scratch/code | `design-system-bootstrap` | "set up a full design system", "tokens + components + docs from our codebase", "bootstrap the whole library" |
-| Brief → finished screen (foundations check → build → a11y) | `brief-to-screen` | "take this brief and ship a screen", "design and validate this page end to end" |
-| Brief → finished, playable deck (build-deck → a11y on slides + deck-quality loop) | `brief-to-deck` | "turn this outline into a polished deck", "design and validate this presentation end to end" |
-| Keep Penpot in sync with code | `code-to-penpot-sync` | "sync our components to code", "reconcile Penpot with the repo", "keep design and code aligned" |
-| Full Figma → Penpot migration program | `figma-migration` | "migrate our entire Figma project", "full Figma import with tokens, components, screens" |
-| Gate a design on accessibility before handoff | `accessibility-gate` | "block handoff until a11y passes", "run the accessibility gate", "validate before we ship" |
+## Token-Aware Brief Contract (the handoff payload)
+Restate the request so the target inherits a usable brief, in the kit's vocabulary
+(`shared/naming-conventions.md`). Forward what the user said verbatim; do not invent token names or
+values — proposing tokens is the target's job, behind its approval gate.
+- **Context** — product, audience, and what Phase 0 found (tokens, components, connected libraries).
+- **Objective** — one verb-led intent ("build a settings screen", "audit contrast").
+- **Inputs** — selection, target page, referenced tokens/components, code paths, Figma URLs.
+- **Constraints** — forbidden components, mode (suggest/review/autofix), scope caps. If the user said
+  whether to avoid the generic-AI look, forward `antiSlop: on|off`; never ask it here.
+- **Acceptance Criteria** — what "done" means for the target (e.g. "AA contrast ≥ 4.5:1 on body
+  text", "all spacing on the 4px grid"). The router forwards them; the target verifies them.
 
-## 9. Modes & Policies
-Mode-default: **suggest** (see `shared/modes-and-policies.md`). The router is read-only by nature, so
-it has **no safe-set auto-fix items** — it never mutates the canvas under any mode. What it *may* do
-without asking: call `high_level_overview`, run read-only `shapeStructure`/`tokenOverview` discovery,
-and propose a route. What always requires the user (or the downstream skill's own gate): executing the
-route when intent is ambiguous, and anything the target skill does (those inherit that skill's mode).
+## Rules
+1. No route is acted on in a session where `high_level_overview` was skipped.
+2. Read-only, always: no mutating `execute_code`, no `export_shape`.
+3. Exactly one target per request. Ambiguity gets one question, never a guess — a wrong-flow start is
+   expensive to undo.
+4. Route from file state, not from the words alone: identical phrasing means different things in an
+   empty file and in a mature system.
+5. Mode is **suggest** (`shared/modes-and-policies.md`): the router proposes; the target's mode governs
+   everything it does afterwards.
 
-## 10. State Management
-The router writes minimal state (`shared/state-management.md`). It does not own a `RUN_ID` workflow —
-that belongs to the skill it routes to — but it records its decision so a resumed session can see how
-it got there:
-- `storage.router = { lastIntent, chosenTarget, queuedIntents, overviewCalled: true }` (session cache).
-- Optional in-file breadcrumb under namespace `penpot-ai`, key `router.lastRoute`, via
-  `setSharedPluginData` (verify signature with `penpot_api_info` before relying on it).
+## State
+The router owns no `RUN_ID` — the target does. It keeps `storage.router = { lastIntent, chosenTarget,
+queuedIntents }` and may leave a breadcrumb for a later session:
+`penpot.currentFile.setSharedPluginData("penpot-ai", "router.lastRoute", JSON.stringify({ chosenTarget, at }))`
+(`penpot_api_info("File", "setSharedPluginData")`). On resume, re-run Phase 0 and reclassify: the file
+may have changed.
 
-On resume: re-read `storage.router` and the breadcrumb, re-run Phase 0 discovery (file state may have
-changed), and reclassify rather than blindly continuing — routing must reflect current reality.
-
-## 11. User Checkpoints
-
-| After phase | Artifacts shown | What we ask |
-|-------------|-----------------|-------------|
-| Phase 0 (discovery) | Page list, selection summary, token-set presence | (Informational — no approval; proceed.) |
-| Phase 1 (classification) — only if ambiguous | Two candidate targets in plain language | "Which best matches what you want — A or B?" |
-| Phase 2 (handoff) — only if ambiguous or the target is an expensive mutating flow on existing content | Chosen target + the Token-Aware Brief Contract + queued intents | "Routing to **X** — confirm or redirect?" (clean matches: state the route and proceed) |
-
-## 12. Naming Conventions
-The router enforces no names itself, but it must **speak the kit's vocabulary** when restating the
-brief so the downstream skill inherits correct expectations (`shared/naming-conventions.md`): tokens in
-dot-notation (`color.action.primary.bg`), components in PascalCase (`Button`), variants as
-`Property=Value` pairs (`State=Hover`), layers as semantic kebab-case HTML names (`nav`, `card-container`).
-If a request implies a `RUN_ID` (any multi-step workflow), use the convention slug, e.g.
-`dsb-2026-06-05-a`, and let the target skill own it.
-
-## 13. Anti-Rationalization Table
-
-| Excuse the LLM makes | Why it's wrong | Deterministic countermeasure that halts the flow |
-|----------------------|----------------|--------------------------------------------------|
-| "This is obviously a build request — I'll just start creating boards now." | The router is read-only; starting mutation here bypasses the target skill's discovery, brief contract, and checkpoints. | Stop. Route to `penpot-build-screen`/`penpot-build-from-code`, emit the §5 brief, and let that skill own Phase 0 and all mutation. |
-| "The request mentions both tokens and a screen — I'll route to both at once." | Fanning out to two mutating skills in parallel produces conflicting edits and an unauditable run. | Split intents. Route the *primary* objective; queue the rest in `storage.router.queuedIntents`. One target per request. |
-| "Intent is a bit ambiguous, but I'll pick the more likely skill and proceed." | A wrong-flow start is expensive to undo (geometry/variant changes are not safe-set). | Halt at the Phase 1 checkpoint; ask one disambiguating question offering the two candidate targets. |
-| "`high_level_overview` was probably called earlier; I'll skip it." | Acting without the MCP's own guidance loaded is the #1 cause of API misuse downstream. | Confirm it ran this session; if uncertain, call it. No route is executed otherwise. |
-| "The host client auto-selected a skill, but I'll re-dispatch to be safe." | Double-dispatch causes the same work to run twice or two skills to fight. | Detect host auto-selection; degrade to documentation (serve the taxonomy as a map) and step aside. |
-| "I'll route based on the user's words alone — no need to read the file." | Identical phrasing routes differently in an empty file vs. a mature system ("set up my design system" → bootstrap vs. extend). | Run Phase 0 reads (`tokenOverview`, `shapeStructure`) and use file state to break ties before classifying. |
-
-## 14. Helper Code Snippets
-Read-only discovery only — the router never mutates.
-
-```js
-// Phase 0a — state sense (paste into one execute_code call)
-return {
-  pages: penpotUtils.getPages().map(p => p.name),
-  currentPage: penpot.currentPage && penpot.currentPage.name,
-  selectionCount: penpot.selection.length,
-  selection: penpot.selection.map(s => ({ id: s.id, name: s.name, type: s.type })),
-  topLevel: penpotUtils.shapeStructure(penpot.currentPage.root, 1)
-};
-```
-
-```js
-// Phase 0b — token state (does a design system already exist?)
-const ov = penpotUtils.tokenOverview();
-return {
-  hasTokens: !!(ov && ov.totalTokens),
-  overview: ov
-};
-```
-
-```js
-// Optional — drop a routing breadcrumb into the file (verify signature first via
-// penpot_api_info("PenpotFile", "setSharedPluginData"))
-penpot.currentFile.setSharedPluginData(
-  "penpot-ai",
-  "router.lastRoute",
-  JSON.stringify({ chosenTarget: "REPLACE-ME", at: "RUN_ID_HERE" })
-);
-return { recorded: true };
-```
-
-## 15. Reference Resources
-- `penpot_api_info("PenpotUtils", "shapeStructure")`, `penpot_api_info("PenpotUtils", "tokenOverview")`
-  — confirm discovery helper signatures.
-- `penpot_api_info("PenpotFile", "setSharedPluginData")` — confirm the breadcrumb signature.
-- `shared/penpot-mcp-tool-reference.md` — the tool surface.
-- `shared/modes-and-policies.md` — why the router is suggest-only.
-- Sibling skills' own `SKILL.md` descriptions — the authoritative trigger lists the router maps onto.
-
-## 16. Supporting Files
-
-### references/ (progressive-disclosure deep dives)
-
-| File | Loaded when | Contents |
-|------|-------------|----------|
-| `references/01-intent-taxonomy.md` | Phase 1 (classification) | Full map of user phrasings → target skill/workflow, with fallbacks, tie-breakers, and multi-intent splitting rules. |
-| `references/02-preflight-overview.md` | Phase 0 (discovery) | How to call `high_level_overview` and run the quick `shapeStructure` / `tokenOverview` reads that ground a routing decision. |
-
-### scripts/ (paste-into-`execute_code` templates)
-None. The router performs no mutations and needs no reusable mutation templates — its only `execute_code`
-usage is the inline read-only discovery snippets in §14.
-
-### workflows/ (vendored in native installs)
-In a native Claude Code install this skill's bundle also carries `workflows/` — the seven multi-skill
-pipelines (§8's workflow targets: `routing`, `design-system-bootstrap`, `brief-to-screen`, `brief-to-deck`,
-`code-to-penpot-sync`, `figma-migration`, `accessibility-gate`), each a `README.md` (prose) +
-`pipeline.json` (deterministic step list). When routing to a workflow, open its files from here; in
-seed-pointer installs they live at the kit root under `workflows/`.
+## Supporting files
+- `references/01-intent-taxonomy.md` — Phase 1: phrasings → target, tie-breakers, splitting, fallbacks.
+- `references/02-preflight-overview.md` — Phase 0: the reads above and how to interpret them.
+- `workflows/` — vendored into this bundle in native Claude Code installs; in seed-pointer installs it
+  lives at the kit root.
+- No `scripts/`: the router has nothing to mutate.
 
 **Doctrine paths.** `shared/…` and `policies/…` resolve inside this bundle in native installs (vendored by the installer); in a Claude Code plugin install they live at the plugin root — `${CLAUDE_PLUGIN_ROOT}/shared/…`, two directories up from this file.

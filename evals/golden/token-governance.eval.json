@@ -14,5 +14,17 @@
       "auto-swapping without explicit opt-in"
     ]
   },
-  "pass_criteria": "Governance report marks the #0066FF finding as exact-swappable, the 18px as review-only, lists the unused token; only the exact swap is offered for opt-in auto-apply."
+  "pass_criteria": "Governance report marks the #0066FF finding as exact-swappable, the 18px as review-only, lists the unused token; only the exact swap is offered for opt-in auto-apply.",
+  "triggers": {
+    "should": [
+      "which shapes use raw hex instead of our tokens?",
+      "is any spacing off the 4px grid in this file?",
+      "find tokens nobody is using"
+    ],
+    "should_not": [
+      "check the contrast of this screen",
+      "create a spacing scale",
+      "generate a DESIGN.md"
+    ]
+  }
 }

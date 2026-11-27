@@ -12,15 +12,15 @@ guidance plus a Plugin API overview.
 
 - If you cannot confirm it ran in this session, **call it now**.
 - Record `storage.router.overviewCalled = true` so a resumed session can tell.
-- No routing decision is *executed* in a session where the overview was skipped (Critical Rule 1).
+- No routing decision is *executed* in a session where the overview was skipped (Rule 1).
 
 ## Step 2 — Sense file + selection state (one read-only `execute_code` call)
 This single read tells you the page layout, what's selected, and where work would land. Paste into one
 `execute_code` call:
 
 ```js
-// READ-ONLY. Verify any unfamiliar helper with penpot_api_info before relying on it,
-// e.g. penpot_api_info("PenpotUtils", "shapeStructure").
+// READ-ONLY. penpotUtils helper signatures are documented in high_level_overview
+// (penpotUtils is not a penpot_api_info type); verify Plugin API types with penpot_api_info.
 return {
   pages: penpotUtils.getPages().map(p => p.name),
   currentPage: penpot.currentPage && penpot.currentPage.name,
@@ -44,11 +44,16 @@ What to read from the result:
 Whether a design system already exists is the single biggest tie-breaker (see `01-intent-taxonomy.md`):
 
 ```js
-// READ-ONLY. tokenOverview returns the active token sets/themes and counts.
-const ov = penpotUtils.tokenOverview();
+// READ-ONLY.
+// tokenOverview() returns { [setName]: { [tokenType]: string[] } } — there is no count field; count it.
+const ov = penpotUtils.tokenOverview() || {};
+const tokenCount = Object.values(ov).reduce(
+  (n, byType) => n + Object.values(byType || {}).reduce((m, names) => m + (names ? names.length : 0), 0), 0);
 return {
-  hasTokens: !!(ov && ov.totalTokens),
-  overview: ov   // sets, themes, counts — enough to know if a system exists
+  hasTokens: tokenCount > 0,
+  tokenCount,
+  sets: Object.keys(ov),
+  overview: ov   // set -> type -> token names — enough to know if a system exists
 };
 ```
 
@@ -64,7 +69,7 @@ So a resumed session can see how the route was reached, drop a tiny breadcrumb. 
 canvas change. Verify the signature first.
 
 ```js
-// Verify: penpot_api_info("PenpotFile", "setSharedPluginData")
+// Verify: penpot_api_info("File", "setSharedPluginData")
 penpot.currentFile.setSharedPluginData(
   "penpot-ai",
   "router.lastRoute",

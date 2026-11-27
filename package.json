@@ -1,6 +1,6 @@
 {
   "name": "penpot-ai-kit",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Agentic design skills, workflows and installer for Penpot via the Penpot MCP. Content-only kit: skills + instructions + policies, no build step.",
   "type": "module",
   "bin": {
@@ -12,7 +12,8 @@
     "validate": "node scripts/dev/validate-kit.mjs",
     "lock": "node scripts/dev/update-lock.mjs",
     "lock:check": "node scripts/dev/update-lock.mjs --check",
-    "test:anti-slop": "node scripts/dev/test-anti-slop.mjs"
+    "test:anti-slop": "node scripts/dev/test-anti-slop.mjs",
+    "eval:triggers": "node scripts/dev/trigger-eval.mjs"
   },
   "files": [
     "AGENTS.md",

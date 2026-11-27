@@ -2,12 +2,13 @@
 
 Verify all of this with `penpot_api_info` before relying on exact shapes — variants are drift-prone.
 
-> ⚠️ **File-corruption risk (gotchas #12 / mcp-api-findings Finding 10):** mutating variant components
-> (`setVariantProperty`, axis renames, `detach()`/`remove()` on variants) has corrupted live files —
-> the backend silently rejects every later save and the session hangs. Duplicate the file before any
-> variant mutation, verify saves persist after the FIRST mutation, and on any ~30 s hang stop and use
-> the standalone-components fallback (`Component / Axis=Value` named components, created one at a
-> time). Reading variants and instancing a specific variant are safe.
+> ⚠️ **Version gate (gotchas #12 / mcp-api-findings Finding 10):** on **Penpot ≥ 2.20.0** variant
+> mutation (`setVariantProperty`, axis renames, `detach()`/`remove()` on variants) is safe — probed
+> live 2026-11-27, every step saved and `penpot.currentFile.validate()` stayed empty. Take a
+> `saveVersion` restore point first and read `validate()` + `variantError` afterwards. On **2.16.x**
+> the same calls corrupted live files (every later save rejected, session hangs); below 2.20 use the
+> standalone-components fallback (`Component / Axis=Value` named components) unless the user works on
+> a duplicate. Reading variants and instancing a specific variant are safe everywhere.
 
 ## Creating variants
 1. Build each variant as its own component Board (clone the base, restyle with state tokens, rename `Property=Value`).

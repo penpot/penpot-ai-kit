@@ -9,7 +9,7 @@
 ## Inputs
 - Sections top → bottom: topbar nav · page title + description · "General" group (workspace name, URL slug, default language) ·
   "Members" group (default role select, invite policy toggles) · "Danger zone" (delete workspace) · sticky save bar.
-- Existing tokens & components: reuse the file's `primitives` / `semantic` / `modes/light` sets and `Button`, `Input`, `Select`, `Toggle` if present; otherwise propose only what is missing.
+- Existing tokens & components: reuse the file's `primitives` / `semantic` sets and the `Button`, `Input`, `Select`, `Toggle` components (the eval's scripted fixture, `fixtures/setup/settings-page.setup.js`, creates them); propose only what is missing.
 
 ## Constraints
 - Use existing components; semantic tokens only; 4px grid; no card-in-card-in-card; one primary action (Save).

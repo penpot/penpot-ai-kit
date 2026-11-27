@@ -15,5 +15,15 @@
       "claiming a perfect 1:1 if any feature didn't map"
     ]
   },
-  "pass_criteria": "validateFidelity.js shows tokens+components+screen migrated; gaps (if any) reported honestly; IR persisted to the ledger."
+  "pass_criteria": "validateFidelity.js shows tokens+components+screen migrated; gaps (if any) reported honestly; IR persisted to the ledger.",
+  "triggers": {
+    "should": [
+      "bring this Figma file into Penpot: https://www.figma.com/design/abc123/App",
+      "move our Figma component library over to Penpot"
+    ],
+    "should_not": [
+      "turn this React page into a Penpot screen",
+      "design a dashboard"
+    ]
+  }
 }

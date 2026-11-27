@@ -54,14 +54,21 @@ if (!screen) {
 if (!screen.flex) { const f = screen.addFlexLayout(); f.dir = "column"; f.horizontalSizing = "fix"; f.verticalSizing = "auto"; }
 
 // --- FILL POLICY (#11): the screen root is THE surface — bound bg, never the default white ------
-screen.fills = [];
+// Re-run safety (gotcha #2): re-applying a bound token toggles it OFF, and writing a literal to a bound
+// property drops the binding — so every write below is skipped when the binding is already in place.
+const has = (prop, name) => !!(screen.tokens && screen.tokens[prop] === name);
 const bgTok = penpotUtils.findTokenByName(BG_TOKEN);
-if (bgTok) { screen.applyToken(bgTok, ["fill"]); bound.push({ prop: "fill", token: BG_TOKEN }); }
-else exceptions.push({ kind: "missing-token", token: BG_TOKEN, prop: "fill" });
+if (bgTok && has("fill", BG_TOKEN)) bound.push({ prop: "fill", token: BG_TOKEN, already: true });
+else {
+  screen.fills = [];
+  if (bgTok) { screen.applyToken(bgTok, ["fill"]); bound.push({ prop: "fill", token: BG_TOKEN }); }
+}
+if (!bgTok) exceptions.push({ kind: "missing-token", token: BG_TOKEN, prop: "fill" });
 
 // --- gap ------------------------------------------------------------------------------------------
 const gapTok = penpotUtils.findTokenByName(GAP_TOKEN);
-if (gapTok) { screen.applyToken(gapTok, ["rowGap"]); bound.push({ prop: "rowGap", token: GAP_TOKEN }); }
+if (gapTok && has("rowGap", GAP_TOKEN)) bound.push({ prop: "rowGap", token: GAP_TOKEN, already: true });
+else if (gapTok) { screen.applyToken(gapTok, ["rowGap"]); bound.push({ prop: "rowGap", token: GAP_TOKEN }); }
 else exceptions.push({ kind: "missing-token", token: GAP_TOKEN, prop: "rowGap" });
 
 // --- padding: bind per side; mirror the resolved number where the instance rejects it (#8) -------
@@ -76,6 +83,7 @@ if (padTok) {
   const FLEX_PROP = { paddingTop: "topPadding", paddingBottom: "bottomPadding", paddingLeft: "leftPadding", paddingRight: "rightPadding" };
   const mirrored = [];
   for (const side of SIDES) {
+    if (has(side, PADDING_TOKEN)) { bound.push({ prop: side, token: PADDING_TOKEN, already: true }); continue; }
     if (!skipPaddingBind) {
       try { screen.applyToken(padTok, [side]); bound.push({ prop: side, token: PADDING_TOKEN }); continue; } catch (e) { /* mirror below */ }
     }

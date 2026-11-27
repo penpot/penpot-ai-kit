@@ -24,7 +24,7 @@ why it fails, and the halting countermeasure.
 
 - Read it at the start of every batch (Phases 2–N) and before declaring the deck done — the excuses
   cluster at exactly those two moments: when the build feels slow, and when it feels finished.
-- An excuse that is not listed is still an excuse if it removes a step from SKILL.md §6 or a gate
+- An excuse that is not listed is still an excuse if it removes a step from the SKILL.md workflow or a gate
   from `auditDeckQuality.js`. State it at the checkpoint and let the user decide; do not decide alone.
 - Every halt is one `execute_code` at most: delete the line, add the placeholder, re-bind the fill,
   run `wireDeckFlow.js`. None of them justifies rebuilding a slide from scratch.

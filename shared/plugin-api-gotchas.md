@@ -2,23 +2,29 @@
 
 > Hard-won facts about the real Plugin API that the model gets wrong by default. Every skill links here. Verify any unfamiliar method with `penpot_api_info` before using it.
 
-> **Version-pinned, probeable gotchas:** #8 (padding token binding) and #13 (`applyToText` fontId)
-> were verified live against a specific Penpot build (see `docs/mcp-api-findings.md`) and may be
-> fixed upstream. Before a heavy build session — or whenever `penpot.version` differs from the last
-> probed version in the ledger — run `shared/scripts/capability-probe.js` (two phases, innocuous,
-> self-cleaning) and trust its verdict over this file. **#12 is NEVER probed** (the probe itself
-> corrupts the file); treat it as standing policy until manually re-verified upstream.
+> **Version-pinned gotchas.** Every "verified live" claim below names the Penpot build it was verified
+> on (history: `docs/mcp-api-findings.md`). Read `penpot.version` in Phase 0; when it differs from the
+> last probed version stored in the ledger (`capabilities` key), run
+> `shared/scripts/capability-probe.js` (two phases, innocuous, self-cleaning) and trust its verdict
+> over this file.
 >
-> **Last live probe (2026-07-09, Penpot 2.17.0 PRE):** #8 padding binding **fixed** · #13
-> `applyToText` **fixed** · `["all"]` **still broken** · direct property set does **NOT** clear a
-> token binding (the 2.17 MCP overview claims it does — the overview is wrong; #2 stands).
+> **Last live probe: 2026-11-27, Penpot 2.20.0 (PRE, wasm renderer), throwaway file.**
+> - **Fixed since 2.17:** variant mutation no longer corrupts the file (#12) · direct property set now
+>   **clears** a token binding (#2) · `await penpot.openPage()` is same-call and cross-page
+>   `appendChild` throws (#15) · reference tokens no longer throw while the target set is inactive,
+>   numeric token values are coerced (#8) · `applyToText` writes a valid `fontId` and keeps `fontSize` (#13).
+> - **Still reproduces:** re-applying an already-bound token **toggles it off** (#2) ·
+>   `applyToken(tok, ["all"])` throws (#8) · new sets are created inactive (#8) · token application is
+>   not readable in the same call, even after `waitForLayoutUpdate()` (#2) · `fonts.findByName` is a
+>   substring match (#13b) · `layoutChild.absolute` children use page coordinates (#14) · new boards
+>   are born white (#11).
+> - **Not reproduced (one attempt):** the spontaneous `flipX` mirror (#16) — keep the sweep.
+> - **Not re-probed:** mass-apply races (#2), image upload (#18).
 >
 > **Last API sweep (2026-09-10, Penpot 2.17 PRE, `penpot_api_info`):** `Page.createFlow` /
-> `shape.addInteraction` (flows, `navigate-to`, `slide`/`dissolve`/`push` animations),
-> `Board.waitForLayoutUpdate()` (#17), `Board.showInViewMode`, `Board.backgroundBlur`,
-> `Gradient` fills and `penpot.uploadMediaUrl` (#18) are all **documented**; `Board.combineAsVariants(ids)`
-> is **listed** on the Board interface but was not exercised live (#9). Documented ≠ verified — the
-> deck/screen builders verify each in their first live run and record verdicts in the ledger.
+> `shape.addInteraction`, `Board.showInViewMode`, `Board.backgroundBlur`, `Gradient` fills and
+> `penpot.uploadMediaUrl` (#18) are **documented**; `Board.combineAsVariants(ids)` is **listed** but
+> was never exercised live (#9). Documented ≠ verified.
 
 ## 1. Style arrays are immutable item-by-item — replace the whole array
 `fills`, `strokes`, `shadows` are arrays whose **individual items cannot be mutated**. To change a
@@ -31,14 +37,15 @@ shape.fills[0].fillColor = "#FF0000";
 shape.fills = [{ fillColor: "#FF0000", fillOpacity: 1 }];
 ```
 
-## 2. Token application is async, by-name, and flaky at scale — CHUNK + VERIFY
-Verified hard-won facts about `shape.applyToken(token, properties)`:
-- **Async (~100 ms):** the shape's resolved properties aren't updated in the same `execute_code` call. Apply in one call; verify in a later one.
-- **By NAME, not id:** the bound value re-resolves from whichever set/theme is active — so a shape bound to a semantic name **does follow theme/set switches** (this is what makes dark mode work; it is NOT a frozen snapshot). The visual switch happens in Penpot's UI when the user activates the set/theme; the plugin's own read may lag.
-- **Do NOT mass-apply in one call.** Firing hundreds of `applyToken` calls in a single `execute_code` loop **races and scrambles bindings** (wrong token lands on wrong property). Apply in **small chunks** (≈25–40 shapes per call) across separate calls, and **verify** each chunk (`shape.tokens` should equal the intended token name); **retry** misses.
-- **Type inconsistency observed:** `applyToken(..., ["fill"])` is reliable on **Boards** but **inconsistent on Text and Rectangle fills** (binding sometimes doesn't stick). Stroke/radius bindings are more reliable. Always verify fills after applying and retry.
-- **Re-applying a token that is already bound TOGGLES IT OFF** (observed live on PRE, 2026-10-06 — it mirrors clicking an applied token pill in the UI). A "re-run the whole binding pass to be safe" loop silently unbinds everything it already bound. Group props per token per shape (`applyToken(tok, ["paddingLeft","paddingRight"])`), apply once, verify, and on retry apply **only** where `shape.tokens[prop]` is still unset.
-- **Removal is NOT via setting the property.** Re-assigning `shape.fills`/`strokes` does **not** reliably clear a token binding in this version. Treat bindings as sticky; overwrite a wrong one by `applyToken`-ing the correct token to the same property.
+## 2. Token application is async, by-name, and a re-apply TOGGLES — apply once, verify next call
+Facts about `shape.applyToken(token, properties)` (re-verified live on 2.20.0 unless noted):
+- **Not readable in the same call.** `shape.tokens` and the resolved property are still stale right after `applyToken` — and `await penpot.waitForLayoutUpdate()` does **not** change that (it resolves in a few ms without the binding). Apply in one `execute_code` call; verify `shape.tokens` in a **later** one.
+- **By NAME, not id:** the bound value re-resolves from whichever set/theme is active — so a shape bound to a semantic name **does follow theme/set switches** (this is what makes dark mode work; it is NOT a frozen snapshot).
+- **Re-applying a token that is already bound TOGGLES IT OFF** (it mirrors clicking an applied token pill in the UI; the value stays, the binding goes). A "re-run the whole binding pass to be safe" loop silently unbinds everything it already bound — and so does a **retried or duplicated `execute_code` call** (#19). Group props per token per shape (`applyToken(tok, ["paddingLeft","paddingRight"])`), apply once, verify, and on retry apply **only** where `shape.tokens[prop]` is still unset. Make every binding step idempotent: `if (shape.tokens[prop] !== tok.name) shape.applyToken(tok, [prop])`.
+- **Removal = set the property directly** (2.20.0: `flex.topPadding = 5` drops the `paddingTop` binding; `text.fills = [...]` drops the `fill` binding). The flip side: any direct write to a bound property **silently unbinds it** — never "nudge" a tokenized value with a literal. On ≤ 2.17 bindings were sticky and this did not work; there, overwrite by applying the correct token.
+- **Do NOT mass-apply in one call** (observed on 2.17, not re-probed). Hundreds of `applyToken` calls in a single loop raced and scrambled bindings. Apply in **small chunks** (≈25–40 shapes per call) and verify each chunk.
+- **Do not mix gaps and paddings in one `applyToken` call** (seen twice on 2.20.0): `applyToken(spacing, ["columnGap", "paddingTop", "paddingBottom"])` recorded the padding bindings but left the paddings at 0 — `shape.tokens` looked right and the layout was wrong. Bind gaps in one call and paddings in another, and when verifying compare the **resolved value** (`flex.topPadding`) as well as `shape.tokens`. To repair, write the padding directly (which clears the binding) and bind it again on its own.
+- **Fill bindings** on Board, Rectangle and Text all stuck on 2.20.0 in the probe; on 2.17 Text/Rectangle fills were inconsistent. Keep verifying fills in the next call.
 
 ## 3. `resize()` forces `growType: "fixed"` on text
 Calling `text.resize(w, h)` switches a Text shape's `growType` to `"fixed"`. If you want
@@ -66,8 +73,8 @@ is `penpot.currentPage.root`. A newly created shape is not on the canvas until a
 ## 8. Tokens live on the local library — `addSet`/`addTheme` take an OBJECT
 Create token sets/tokens through `penpot.library.local.tokens`:
 - `addSet({ name })` — **object argument**, not a bare string. (`addSet("primitives")` fails.)
-- **New sets are created INACTIVE.** Call `set.toggleActive()` after creating a set. This matters twice: (a) a **reference token** `"{...}"` *fails validation* unless the referenced set is active, and (b) only **active** sets affect shapes.
-- `set.addToken({ type, name, value })` — `value` is always a **string**: a literal (`"#0066FF"`, `"16"`) or a reference (`"{color.brand.500}"`). **Numeric values fail** (`value: 16` → invalid; use `"16"`). Read `token.resolvedValue` for the computed value.
+- **New sets are created INACTIVE** (still true on 2.20.0). Call `set.toggleActive()` right after creating a set. This matters twice: (a) a **reference token** `"{...}"` only resolves while the referenced set is active — on 2.20.0 `addToken` succeeds but `resolvedValue` is `null` until then; on ≤ 2.17 the same call *threw* `Value not valid` — and (b) only **active** sets affect shapes.
+- `set.addToken({ type, name, value })` — `value` is a **string**: a literal (`"#0066FF"`, `"16"`) or a reference (`"{color.brand.500}"`). Always pass strings: 2.20.0 coerces a number (`value: 16` → `"16"`), but ≤ 2.17 rejected it as invalid. Read `token.resolvedValue` for the computed value.
 - `addTheme({ group, name })` — **object argument** (e.g. `{ group: "mode", name: "Light" }`).
 
 `applyToken(token, properties)` property names are specific: `"fill"`, `"strokeColor"`, `"fontSize"`,
@@ -94,7 +101,8 @@ new instance; `component.mainInstance()` returns the main shape.
 **Variant groups — three entry points, one preferred:**
 - **Preferred (Penpot ≥ 2.17):** `penpotUtils.createVariantContainer([{ shape: mainBoard, properties:
   { Size: "Medium", State: "Hover" } }, …])` — one call does the whole grouping + property naming.
-  Verify with `penpot_api_info("PenpotUtils", "createVariantContainer")` and gate it behind the
+  Its signature is documented in `high_level_overview` (`penpotUtils` is not a `penpot_api_info`
+  type, so that lookup fails); gate it behind the
   duplicate-file check in #12.
 - **Low-level:** `penpot.createVariantFromComponents(mainInstances: Board[])`, then
   `container.variants.renameProperty(0, name)`, `addProperty()`, and per component
@@ -125,48 +133,46 @@ never a literal). Decide per board; default layout containers to transparent. Se
 `shared/modes-and-policies.md`. Note: `fills = []` reliably clears a *raw, unbound* default fill (the
 case here); clearing a *token binding* is sticky (see #2) — overwrite it by applying the right token.
 
-## 12. NEVER mutate a variant component — it corrupts the file and hangs every save
-Observed live (design.penpot.dev v2.16.0-RC10; see `docs/mcp-api-findings.md` Finding 10):
-`LibraryVariantComponent.setVariantProperty(pos, value)` updates the variant properties but **not**
-the variant root shape's internal `:variant-name`, leaving the file failing backend
-referential-integrity validation. From then on **every component-touching mutation is rejected with
-HTTP 400 that the plugin never surfaces** — calls hang ~30 s, the session dies, and unflushed
-mutations roll back. The same poison applies to `addVariant()` + rename, `comp.instance()` +
-`detach()` on a variant, `createComponent` on a detached variant instance, and `shape.remove()` on a
-variant board. Recovery is manual (reload the Penpot tab, delete the bad container from the UI).
+## 12. Variant mutation — safe on ≥ 2.20.0, file-corrupting on 2.16.x
+**Penpot 2.20.0 (probed live 2026-11-27 on a throwaway file):** the whole variant flow works and every
+call returned a confirmed save with `penpot.currentFile.validate()` → `[]`:
+`penpotUtils.createVariantContainer([{ shape, properties }])`, `setVariantProperty(pos, value)`,
+`variants.renameProperty(pos, name)`, `variantComp.instance()` + `switchVariant`, `detach()` on a
+variant instance, `createComponent` on the detached copy, and `remove()` on a variant main board.
+Build real variants. Protocol (cheap, and it replaces the old "duplicate the file" gate):
+1. `await penpot.currentFile.saveVersion("before variants — <RUN_ID>")` — a restore point the user can
+   roll back to from the History panel.
+2. Run the variant step (prefer `createVariantContainer`, #9).
+3. In the next call, read `penpot.currentFile.validate()` and each component's `variantError`; anything
+   non-empty → stop and report, do not keep mutating.
 
-**Safe strategy:** do not call variant-mutating APIs. Build each state as a standalone Board, then
-`createComponent([board])` **one at a time** (batching ≥5 in one call times out; allow a flush pause
-between calls). Name them `Component / State` (e.g. `Checkbox / Disabled Checked`) so Penpot groups
-them; the user can convert them to real variants in the UI. **Reading** variants and instancing a
-specific variant (`variantComp.instance()`) are safe — only *mutation* poisons the file. If you do
-attempt the variant flow, have the user duplicate the file first and verify saves still succeed after
-the first mutation.
+**Penpot 2.16.x (Finding 10) — never mutate variants.** `setVariantProperty` left the variant root's
+internal `:variant-name` stale, the backend rejected every later save with an HTTP 400 the plugin never
+surfaced, calls hung ~30 s and unflushed work rolled back; recovery was manual (reload, delete the
+container in the UI). 2.17–2.19 were never probed: on anything below 2.20 treat variant mutation as
+unsafe unless the user works on a duplicate, and fall back to standalone components named
+`Component / State`, which the user can convert to variants in the UI. Reading variants and instancing
+a specific variant were always safe.
 
-**Penpot ≥ 2.17.0 note (2026-07-09):** the MCP now ships `penpotUtils.createVariantContainer(
-[{ shape, properties }])`, a first-class helper wrapping the whole multi-step variant workflow —
-strong signal this bug got upstream attention. This gotcha is deliberately NOT auto-probed (the
-probe would corrupt the file). Before relying on variants: duplicate the file, run
-`createVariantContainer` on two throwaway components, and confirm saves still succeed; only then
-lift the restriction for that instance.
+Side notes from the probe: a component named `Group / Name` is stored with `name === "Name"` (the
+prefix becomes its path) — match on the last segment; creating three components in one call saved fine.
 
-## 13. `font.applyToText()` — corrupt `fontId` on old versions; FIXED in ≥ 2.17.0
-On Penpot 2.16.x, `font.applyToText(text, variant)` set a broken uuid as `fontId`, so exports
-rendered with a serif/mono fallback. **Probed live on 2.17.0 (2026-07-09): fixed** — it writes a
-valid id (e.g. `"gfont-m-plus-2"`). On older instances (or if the probe says `reproduces`), set the
-font fields directly from the `Font`/`FontVariant` objects instead: `text.fontId = font.fontId`,
-plus `fontFamily`, `fontVariantId`, `fontWeight`, `fontStyle`.
+## 13. `font.applyToText()` — safe on ≥ 2.17.0; corrupt `fontId` on 2.16.x
+`font.applyToText(text, variant)` writes a valid id on 2.17.0 and 2.20.0 (e.g. `"gfont-inter"`), and on
+2.20.0 it left a previously set `fontSize` untouched. On 2.16.x it wrote a broken uuid and exports fell
+back to serif/mono; there, set the fields directly from the `Font`/`FontVariant` objects
+(`text.fontId = font.fontId`, plus `fontFamily`, `fontVariantId`, `fontWeight`, `fontStyle`).
 
 ## 13b. `penpot.fonts.findByName` matches by SUBSTRING — verify the exact family
-`findByName("Roboto")` can return **"Roboto Mono"** (first substring hit), silently setting a
-monospace where you wanted the sans (observed live 2026-07-09 on 2.17.0 — the whole screen
-rendered mono). Resolve fonts exactly: `penpot.fonts.all.find(f => f.name === "Roboto")`, then
+`findByName("Roboto")` returns **"Roboto Mono"** (first substring hit), silently setting a
+monospace where you wanted the sans (observed on 2.17.0, still true on 2.20.0). Resolve fonts exactly: `penpot.fonts.all.find(f => f.name === "Roboto")`, then
 `font.applyToText(text, variant)` (safe on ≥2.17, see #13). After `applyToText`, re-assert
 `fontSize`/`letterSpacing`/`lineHeight` — the variant application can reset them.
 
 ## 14. `layoutChild.absolute` children use PAGE coordinates — and boards clip at their edges
 With `child.layoutChild.absolute = true`, setting `child.x`/`child.y` uses **absolute page
-coordinates**, not parent-relative ones (the overview claims relative — it's wrong): compute
+coordinates**, not parent-relative ones (the overview claims relative — it's wrong; re-verified on
+2.20.0: `abs.x = 10` inside a board at x=400 gives `parentX = -390`): compute
 `parent.x + offset`. Also, boards **clip** children by default — an absolute decoration placed at or
 beyond the board edge is clipped invisible. Place edge decorations as absolute children of the
 *outer* (screen) board instead of the clipped inner board.
@@ -176,15 +182,22 @@ To stretch a flex child set `child.layoutChild.horizontalSizing = "fill"` — se
 `child.horizontalSizing = "fill"` directly throws `Value not valid`. Set any `layoutChild.*` sizing
 only **after** the child is appended to its layout parent (on an orphan shape it throws). Container
 self-sizing (`board.verticalSizing = "auto"`) works directly. Related session traps: `openPage()` is
-async — `penpot.currentPage` reflects the new page only on the *next* `execute_code` call; after a
+async — `await` it (see below); after a
 plugin-session restart `storage` is wiped and focus resets — re-find shapes by name and re-`openPage`
 before continuing.
 
-**Page-targeting protocol (two calls, no exceptions).** `createBoard()` lands on the page Penpot
-considers current *at creation time*, and a board on the wrong page **cannot be moved**: cross-page
-`otherPage.root.appendChild(shape)` returns without error and does nothing
-(`docs/mcp-api-findings.md` Finding 9). So, whenever work must live on a specific page (decks, scratch
-pages, documentation pages):
+**Page targeting.** `createBoard()` lands on the page that is active *at creation time*, and shapes
+can only be created or modified on the active page. **Penpot 2.20.0 (probed live 2026-11-27):**
+`await penpot.openPage(page)` resolves once the page is active — `penpot.currentPage` is the new page
+in the **same** call, so `await penpot.openPage(page); const b = penpot.createBoard();` is safe.
+`penpot.createPage()` does not activate the new page. Cross-page `otherPage.root.appendChild(shape)`
+now **throws** (`Cannot modify a page that is not currently active`) instead of silently doing
+nothing — a board on the wrong page still cannot be moved, but you find out. Assert
+`penpot.currentPage.id` after the `await` before creating anything.
+
+**Older instances (≤ 2.17, Finding 9) — two-call protocol.** There `openPage` could not be awaited
+and the cross-page append was a silent no-op. The kit's page scripts (`createDeckPage.js`) still run
+this conservative form, which is also correct on 2.20:
 1. **Call A** — `const page = penpotUtils.getPageByName(NAME) || penpot.createPage(); page.name = NAME;
    penpot.openPage(page); storage.pageId = page.id; return { pageId: page.id };`
 2. **Call B** — `if (penpot.currentPage.id !== storage.pageId) return { ok: false, currentPage:
@@ -221,6 +234,10 @@ before switching them to `fill`, rather than relying on fill to expand a 100px d
 export + look before the checkpoint — the mirror is unmissable in the image and invisible in the
 structure read.
 
+**2.20.0 note (2026-11-27):** one attempt at the exact recipe above (100×100 row, three 180px text
+children, then `fill`) did **not** mirror — `flipX` stayed `false` and the export read correctly. One
+clean run is not proof the reflow bug is gone; the sweep is idempotent and cheap, so keep it.
+
 ## 17. `Board.waitForLayoutUpdate()` replaces the "sleep 100 ms" idiom for layout geometry
 Penpot ≥ 2.17 exposes `board.waitForLayoutUpdate(timeout?: number): Promise<void>` on layout boards.
 After appending children / changing gaps, padding or sizing, `await board.waitForLayoutUpdate()`
@@ -243,3 +260,32 @@ is the whole recipe (remote mode; `import_image` exists only in local mode). Tra
   content (`shared/design-quality.md` §6).
 - `import_image` (local mode) and `uploadMediaData(name, Uint8Array, mime)` are alternatives when the
   bytes are already at hand; the verification rule is the same.
+
+## 19. Saves are confirmed per call — and a failed call may still have run
+Penpot 2.20 MCP semantics (overview + live session 2026-11-27):
+- `execute_code` returns success only **after Penpot saved** that call's changes; a rejected or
+  timed-out save fails the call. Never treat a failed call as applied, and never `await
+  penpot.waitForSave()` yourself (it waits twice). When a response starts with a **rollback warning**,
+  distrust what you know: re-read the named pages/shapes, redo what is missing, and stop if it is
+  rejected again. "Workspace is read-only" / "Changes could not be saved" are not retry-loop errors —
+  wait, or ask the user to reopen the file.
+- **A failed call is not proof that nothing ran.** Observed live: a call that came back as a gateway
+  502 had been executed **twice** on the file (duplicate shapes), and a call that timed out had applied
+  all its bindings. After any transport error or timeout, **read state before retrying**, and write
+  every step so a second run is harmless: find-by-name before create, and guard `applyToken` (#2 — a
+  blind re-run toggles bindings off).
+- `await penpot.waitForLayoutUpdate()` after `applyToken`s once rejected with a 30 s timeout although
+  the bindings were applied (not reproducible in isolation, where it resolved in ~5 ms). Use it for
+  layout geometry (#17), never as a "tokens are applied" signal (#2).
+- **Restore points and integrity checks** (all verified on 2.20.0):
+  `await penpot.currentFile.saveVersion(label)` creates a named version (`{ label, createdBy, createdAt,
+  isAutosave }`); `penpot.currentFile.validate()` returns the file's referential-integrity errors (`[]`
+  when healthy); `const id = penpot.history.undoBlockBegin(); … penpot.history.undoBlockFinish(id)`
+  groups a step into a single undo. Take a version before any restructuring phase (variants,
+  migrations, bulk rebinding) and validate after it.
+- `export_shape("page")` returned a blank thumbnail on 2.20.0 — export a specific board.
+- **Keep data in `storage`, not functions.** Observed 3 out of 3 times on 2.20.0 (2026-11-27): a
+  function saved in `storage` during one call and *called* in a later call hung until the tool timed
+  out — even a read-only one-liner — while the same code pasted inline returned at once. The cause is
+  not isolated (the instance was unstable that day, and the overview says functions can be stored), so
+  treat it as a strong caution: store ids and plain data, and paste helper code again in each call.

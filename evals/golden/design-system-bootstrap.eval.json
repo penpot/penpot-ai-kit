@@ -7,7 +7,7 @@
       "checkpoint after the tokens step (primitives, semantic, modes/light, modes/dark) before any component is built",
       "checkpoint after the components step with exports of the state matrices",
       "run penpot-audit-tokens (govern) and report, then penpot-rename-layers (name) on auto-named layers only",
-      "gate variant grouping behind the duplicate-file confirmation (gotchas #12) and prefer penpotUtils.createVariantContainer"
+      "gate variant grouping per gotchas #12 (saveVersion restore point + validate() on Penpot >= 2.20; duplicate-file confirmation or standalone fallback below) and prefer penpotUtils.createVariantContainer"
     ],
     "must_create": [
       "token sets primitives, semantic, modes/light (active) and modes/dark (inactive) following shared/modes-and-policies.md",

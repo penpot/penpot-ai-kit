@@ -18,5 +18,15 @@
       "renaming a main component shape (none exist in fixture, but code must check)"
     ]
   },
-  "pass_criteria": "shapeStructure on the page confirms every layer now has a semantic HTML element or kebab-case role name; 0 layers match the auto-generated pattern; 0 geometry changes detected; no main component was renamed (none existed); rename ledger records the before-after map."
+  "pass_criteria": "shapeStructure on the page confirms every layer now has a semantic HTML element or kebab-case role name; 0 layers match the auto-generated pattern; 0 geometry changes detected; no main component was renamed (none existed); rename ledger records the before-after map.",
+  "triggers": {
+    "should": [
+      "these layers are all called Rectangle 12, give them proper names",
+      "clean up the layer names on this board"
+    ],
+    "should_not": [
+      "annotate this screen for handoff",
+      "find hardcoded colors"
+    ]
+  }
 }

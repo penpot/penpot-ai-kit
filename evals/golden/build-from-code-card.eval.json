@@ -21,5 +21,15 @@
       "detach() on the Button instance without approval"
     ]
   },
-  "pass_criteria": "shapeStructure on the card Board shows h2, p, and a Button component instance; every fill/spacing/radius reads as a token binding (shape.tokens), not a raw value; no Shapes named 'Rectangle' remain in scope; tokenOverview shows no new tokens were silently created (only proposed)."
+  "pass_criteria": "shapeStructure on the card Board shows h2, p, and a Button component instance; every fill/spacing/radius reads as a token binding (shape.tokens), not a raw value; no Shapes named 'Rectangle' remain in scope; tokenOverview shows no new tokens were silently created (only proposed).",
+  "triggers": {
+    "should": [
+      "here is the JSX for our pricing page, rebuild it in Penpot",
+      "port this HTML and CSS to a Penpot board using our tokens"
+    ],
+    "should_not": [
+      "design a pricing page from this brief",
+      "does my code match this design?"
+    ]
+  }
 }

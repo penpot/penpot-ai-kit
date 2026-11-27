@@ -56,9 +56,14 @@ if (!board) {
 // --- FILL POLICY: the screen root is THE one surface for this screen ------
 // Every board is born with an opaque white fill (gotchas #11). The screen carries the single bg, bound
 // to a token so it flips in dark mode; sections nested inside stay transparent (see buildSection.js).
+// Re-run safety (gotchas #2): re-applying a bound token toggles the binding OFF and a literal write
+// drops it, so every write below is skipped when the binding is already in place.
+const has = (prop, name) => !!(board.tokens && board.tokens[prop] === name);
 const bg = penpotUtils.findTokenByName(BG_TOKEN);
-board.fills = [];                                     // drop Penpot's default #FFFFFF first
-if (bg) board.applyToken(bg, ["fill"]);               // bound surface -> follows light/dark switch
+if (!(bg && has("fill", BG_TOKEN))) {
+  board.fills = [];                                   // drop Penpot's default #FFFFFF first
+  if (bg) board.applyToken(bg, ["fill"]);             // bound surface -> follows light/dark switch
+}
 
 // --- spacing: gap + padding BOUND to tokens (padding falls back to mirrored numbers) ---
 const pad = penpotUtils.findTokenByName(PAD_TOKEN);
@@ -66,7 +71,7 @@ const gap = penpotUtils.findTokenByName(GAP_TOKEN);
 const bound = [];
 const exceptions = [];
 
-if (gap) { board.applyToken(gap, ["rowGap"]); bound.push({ prop: "rowGap", token: GAP_TOKEN }); }
+if (gap) { if (!has("rowGap", GAP_TOKEN)) board.applyToken(gap, ["rowGap"]); bound.push({ prop: "rowGap", token: GAP_TOKEN }); }
 
 // Capability ledger (written by the probe / earlier runs): if gotcha #8 is known to reproduce on this
 // instance, skip straight to the numeric mirror instead of throwing four times.
@@ -87,6 +92,7 @@ if (pad) {
   const FLEX_PROP = { paddingTop: "topPadding", paddingBottom: "bottomPadding", paddingLeft: "leftPadding", paddingRight: "rightPadding" };
   const mirrored = [];
   for (const side of SIDES) {
+    if (has(side, PAD_TOKEN)) { bound.push({ prop: side, token: PAD_TOKEN }); continue; }
     if (!skipPaddingBind) {
       try { board.applyToken(pad, [side]); bound.push({ prop: side, token: PAD_TOKEN }); continue; } catch (e) { /* fall through to mirror */ }
     }

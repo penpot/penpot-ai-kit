@@ -24,8 +24,10 @@ for (const b of BINDINGS) {
   const token = penpotUtils.findTokenByName(b.tokenName);
   if (!token) { missingTokens.push(b.tokenName); continue; }
   for (const sh of shapes) {
-    sh.applyToken(token, b.properties);
-    applied.push({ shape: sh.id, token: b.tokenName, properties: b.properties });
+    // re-applying a token that is already bound toggles the binding OFF (gotchas #2) — apply only what is missing
+    const todo = b.properties.filter(p => !(sh.tokens && sh.tokens[p] === b.tokenName));
+    if (todo.length) sh.applyToken(token, todo);
+    applied.push({ shape: sh.id, token: b.tokenName, properties: todo, alreadyBound: b.properties.filter(p => !todo.includes(p)) });
   }
 }
 return { applied, missingTokens, note: "Verify resolved values in a SEPARATE execute_code call (async)." };

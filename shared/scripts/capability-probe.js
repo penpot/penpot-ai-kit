@@ -1,7 +1,9 @@
 // capability-probe.js — test whether the VERSION-PINNED gotchas still reproduce on the connected
 // Penpot instance, instead of assuming they are eternal truths.
 // VALIDATED LIVE 2026-07-09 against Penpot 2.17.0 (remote MCP): #8 fixed, #13 fixed, ["all"] still
-// broken, direct property set does NOT clear a binding. Re-run whenever `penpot.version` changes.
+// broken, direct property set does NOT clear a binding.
+// MANUAL PROBE 2026-11-27 against Penpot 2.20.0: #8 fixed, #13 fixed, ["all"] still broken, direct
+// property set now CLEARS the binding ("direct-set-clears-binding"). Re-run whenever `penpot.version` changes.
 //
 // Usage: paste into an `execute_code` call TWICE (token application is async — gotcha #2):
 //   1st call with PHASE = "apply"   → creates a tiny off-canvas probe board (+ a clearly-named
@@ -13,9 +15,9 @@
 //   gotcha8       applyToken → ["paddingTop"]        (F8: threw on 2.16.x; fixed on 2.17.0)
 //   gotchaAll     applyToken → ["all"]               (F8: still throws on 2.17.0)
 //   gotcha13      font.applyToText fontId integrity  (F13: corrupt on 2.16.x; fixed on 2.17.0)
-//   bindingRemoval direct property set over a bound token (gotcha #2 says sticky; MCP 2.17 overview
-//                  claims it clears — live: STICKY, the overview is wrong)
-// NOT probed: #12 (variant mutation corrupts the file + hangs saves) — DESTRUCTIVE, never probe it.
+//   bindingRemoval direct property set over a bound token (sticky on 2.17; clears on 2.20 — gotcha #2)
+// NOT probed: #12 (variant mutation) — it corrupted files on 2.16.x, so it is never auto-probed. It was
+//   verified safe by hand on 2.20.0 (throwaway file); on older builds probe it only on a duplicate.
 //
 // Verdicts: "reproduces" | "fixed" | "unknown". Persisted to the ledger (namespace "penpot-ai",
 // key "capabilities") so later sessions read instead of re-probing.

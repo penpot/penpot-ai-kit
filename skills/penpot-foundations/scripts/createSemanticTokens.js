@@ -29,12 +29,17 @@ const primNames = new Set(prim ? prim.tokens.map(t => t.name) : []);
 // CRITICAL: referenced set (primitives) must be ACTIVE or "{...}" tokens fail validation.
 if (prim && !prim.active) prim.toggleActive();
 
-const lightSet = tok.sets.find(s => s.name === "modes/light") || tok.addSet({ name: "modes/light" });
-const semSet   = tok.sets.find(s => s.name === "semantic")    || tok.addSet({ name: "semantic" });
-if (!lightSet.active) lightSet.toggleActive();
-if (!semSet.active)   semSet.toggleActive();
-
 const isColour = t => t.type === "color";
+// Create a set only when something will go in it — an empty set is debt (a colour-only brief must not
+// leave an empty `semantic` set behind, and vice versa).
+const ensureSet = (name, needed) => {
+  let s = tok.sets.find(x => x.name === name) || null;
+  if (!s && needed) s = tok.addSet({ name });
+  if (s && !s.active) s.toggleActive();
+  return s;
+};
+const lightSet = ensureSet("modes/light", SEMANTIC.some(isColour));
+const semSet   = ensureSet("semantic", SEMANTIC.some(t => !isColour(t)));
 let addedLight = 0, addedSem = 0; const unresolved = [];
 for (const t of SEMANTIC) {
   const ref = (t.value.match(/^\{(.+)\}$/) || [])[1];
@@ -43,8 +48,8 @@ for (const t of SEMANTIC) {
   if (!target.tokens.find(x => x.name === t.name)) { target.addToken(t); isColour(t) ? addedLight++ : addedSem++; }
 }
 return {
-  sets: { colours: lightSet.name, invariant: semSet.name },
+  sets: { colours: lightSet ? lightSet.name : null, invariant: semSet ? semSet.name : null },
   added: { "modes/light": addedLight, semantic: addedSem },
-  totals: { "modes/light": lightSet.tokens.length, semantic: semSet.tokens.length },
+  totals: { "modes/light": lightSet ? lightSet.tokens.length : 0, semantic: semSet ? semSet.tokens.length : 0 },
   unresolved
 };
