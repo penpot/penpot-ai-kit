@@ -15,9 +15,17 @@ const STATE_AXIS = "State";
 const lib = penpot.library.local;
 const parseName = n => Object.fromEntries([...String(n || "").matchAll(/([A-Za-z][A-Za-z0-9]*)=([A-Za-z0-9]+)/g)].map(m => [m[1], m[2]]));
 
-// 1) real variants: components named BASE_NAME that belong to a variant group
-let cells = (lib.components || []).filter(c => c.name === BASE_NAME && c.isVariant && c.isVariant())
-  .map(c => ({ props: c.variantProps || {}, main: c.mainInstance(), error: c.variantError || null }));
+// 1) real variants. `library.components` lists a variant GROUP as ONE entry (its first variant), so the
+//    cells must come from the group itself: head.variants.variantComponents() (verified on 2.20).
+const heads = (lib.components || []).filter(c => c.name === BASE_NAME && c.isVariant && c.isVariant());
+const seen = new Set(); let cells = [];
+for (const head of heads) {
+  let group = []; try { group = (head.variants && head.variants.variantComponents && head.variants.variantComponents()) || []; } catch (e) { group = []; }
+  for (const c of (group.length ? group : [head])) {
+    if (seen.has(c.id)) continue; seen.add(c.id);
+    cells.push({ props: c.variantProps || {}, main: c.mainInstance(), error: c.variantError || null });
+  }
+}
 let mode = "variants";
 // 2) fallback: standalone components whose NAME carries Axis=Value pairs
 if (!cells.length) {

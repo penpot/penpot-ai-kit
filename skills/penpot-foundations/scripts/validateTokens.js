@@ -27,5 +27,5 @@ for (const t of all) {
 return {
   totals: { sets: tok.sets.length, tokens: all.length, themes: tok.themes.length },
   unresolved, offGrid, emptyResolved,
-  pass: unresolved.length === 0 && offGrid.length === 0
+  pass: unresolved.length === 0 && offGrid.length === 0 && emptyResolved.length === 0
 };

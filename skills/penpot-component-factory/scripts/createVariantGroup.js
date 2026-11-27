@@ -123,8 +123,20 @@ if (CONTAINER_NAME && !/REPLACE-ME/.test(CONTAINER_NAME)) container.name = CONTA
 // Organize the container visually: variants stack by default — a flex layout arranges them and
 // makes the container reflow to fit. Handle containers that already have a flex and those that don't.
 let fl = container.flex || container.addFlexLayout();
-fl.dir = "row"; fl.columnGap = 16; fl.rowGap = 16;
-fl.topPadding = fl.bottomPadding = 20; fl.leftPadding = fl.rightPadding = 20;
+fl.dir = "row";
+// Container spacing: bound to a spacing token when the file has one (first match), literal otherwise —
+// the container is canvas chrome, so a missing token is reported, not blocking.
+const chromeTok = ["spacing.16", "spacing.inset.md", "spacing.24"].map(n => penpotUtils.findTokenByName(n)).find(Boolean) || null;
+const CHROME_PROPS = ["columnGap", "rowGap", "paddingTop", "paddingBottom", "paddingLeft", "paddingRight"];
+let containerSpacing;
+if (chromeTok) {
+  const todo = CHROME_PROPS.filter(p => !(container.tokens && container.tokens[p] === chromeTok.name));
+  if (todo.length) container.applyToken(chromeTok, todo);
+  containerSpacing = { token: chromeTok.name };
+} else {
+  fl.columnGap = 16; fl.rowGap = 16; fl.topPadding = fl.bottomPadding = 16; fl.leftPadding = fl.rightPadding = 16;
+  containerSpacing = { literal: 16, note: "no spacing token found — propose one" };
+}
 fl.alignItems = "center"; fl.horizontalSizing = "auto"; fl.verticalSizing = "auto";
 if ("wrap" in fl) fl.wrap = "wrap";
 
@@ -140,6 +152,7 @@ return {
   components: out,
   missing,
   penpotVersion: penpot.version || null,
+  containerSpacing,
   restorePoint,
   validation: (() => { try { return penpot.currentFile.validate(); } catch (e) { return "validate() unavailable: " + String(e && e.message || e); } })(),
   next: "in the NEXT call re-read penpot.currentFile.validate() and each component's variantError; non-empty -> stop, report, offer the restore point"
