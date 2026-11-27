@@ -115,6 +115,8 @@ and one retry, stop and emit the verdict JSON now with "verdict": "INCONCLUSIVE"
 could check, and in notes exactly what had been built and what was not cleaned up.
 
 ## 5. Cleanup
+Remove ONLY what this run created. Never delete file versions / restore points (deletion is irreversible
+and label matching also hits other runs' versions), and never purge anything that predates this run.
 Remove every "eval-${spec.id}-" prefixed shape/token/set you created, then report cleanup in notes.`;
 
 if (printOnly) { process.stdout.write(prompt + "\n"); process.exit(0); }

@@ -58,7 +58,7 @@ for (const base of bases) {
     const got = actual.find(a => a.key === want) || (!want && actual[0]) || null;
     if (!got) { gap("variant-missing", `${base}${want ? " (" + want + ")" : ""}`); baseOk = false; continue; }
     if (got.error) { gap("variant-error", `${base} (${want}): ${got.error}`); baseOk = false; }
-    cellsFound++; mains.push(got.comp.mainInstance());
+    cellsFound++; mains.push({ shape: got.comp.mainInstance(), label: `${base}${want ? " (" + want + ")" : ""}` });
   }
   if (expected.some(e => e.variantProps) && expected.length > 1 && !head) gap("variants-not-grouped", `${base}: ${expected.length} standalone components instead of a variant group`);
   if (baseOk) compOk++;
@@ -69,7 +69,7 @@ let screenOk = 0;
 for (const s of IR.screens || []) {
   const board = penpotUtils.findShape(x => x.type === "board" && x.name === s.name);
   if (!board) { gap("screen-missing", s.name); continue; }
-  mains.push(board);
+  mains.push({ shape: board, label: s.name });
   const kids = board.children || [];
   const wantKids = (s.children || []).length;
   let ok = true;
@@ -95,13 +95,16 @@ const rawOf = (sh) => {
   return raw;
 };
 const seen = new Set();
-for (const m of mains) {
+for (const { shape: m, label } of mains) {
   if (!m || seen.has(m.id)) continue; seen.add(m.id);
   for (const sh of [m, ...penpotUtils.findShapes(x => x.id !== m.id, m)]) {
-    let inInstance = false; try { inInstance = sh.id !== m.id && sh.isComponentInstance && sh.isComponentInstance(); } catch (e) {}
-    if (inInstance) continue;                       // an instance's values belong to its component
+    // Skip only COPIES (their values belong to their component). isComponentInstance() is also true for
+    // a main instance and everything inside it — using it here hid every raw value inside a component.
+    let isCopy = false; try { isCopy = sh.id !== m.id && sh.isComponentCopyInstance && sh.isComponentCopyInstance(); } catch (e) {}
+    if (isCopy) continue;
     const raw = rawOf(sh);
-    if (raw.length) { rawCount += raw.length; gap("untokenized-on-canvas", `${m.name} > ${sh.name}: ${raw.join(", ")}`); }
+    // variant mains all carry the component's name, so the label (with its Axis=Value) identifies the cell
+    if (raw.length) { rawCount += raw.length; gap("untokenized-on-canvas", `${label}${sh.id === m.id ? "" : " > " + sh.name}: ${raw.join(", ")}`); }
   }
 }
 

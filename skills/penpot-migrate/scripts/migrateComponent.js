@@ -38,7 +38,7 @@ function buildBoard(node, label, i) {
   f.horizontalSizing = "auto"; f.verticalSizing = "auto";
   const gapProp = /^row/.test(f.dir) ? "columnGap" : "rowGap";
   const gapVal = L[gapProp];
-  if (T[gapProp] || gapVal) bind(b, T[gapProp], [gapProp], gapVal, v => { f[gapProp] = v; });     // gaps and paddings in SEPARATE calls
+  if (T[gapProp] || gapVal) bind(b, T[gapProp], [gapProp], gapVal, v => { f[gapProp] = v; });     // gaps and paddings in separate applyToken calls (never one call mixing both — gotchas #2)
   const pad = L.padding || null;
   if (T.paddingY || T.paddingX) {                              // vertical / horizontal pair
     bind(b, T.paddingY, ["paddingTop", "paddingBottom"], pad, p => { f.topPadding = p[0]; f.bottomPadding = p[2]; });
