@@ -62,12 +62,18 @@ if (!section) {
 }
 // FILL POLICY (gotchas #11): a section is structural by default — clear Penpot's default opaque white
 // so the screen bg shows through and dark mode works. Only bind a bg token if it's a genuine surface.
-section.fills = [];
+// Re-run safety (gotchas #2, #19): a re-applied token toggles its binding OFF and a literal write drops
+// it — so nothing below touches a property that is already bound to the intended token.
+const isBound = (shape, prop, name) => !!(shape.tokens && shape.tokens[prop] === name);
 const surfTok = SURFACE_TOKEN && penpotUtils.findTokenByName(SURFACE_TOKEN);
-if (surfTok) section.applyToken(surfTok, ["fill"]);   // bound surface -> follows light/dark switch
+if (!(surfTok && isBound(section, "fill", SURFACE_TOKEN))) {
+  if (created || !(section.tokens && section.tokens.fill)) section.fills = [];
+  if (surfTok) section.applyToken(surfTok, ["fill"]);   // bound surface -> follows light/dark switch
+}
 
 const gapTok = penpotUtils.findTokenByName(GAPTOK);
-if (gapTok) section.applyToken(gapTok, [FLEXDIR === "row" ? "columnGap" : "rowGap"]);
+const gapProp = FLEXDIR === "row" ? "columnGap" : "rowGap";
+if (gapTok && !isBound(section, gapProp, GAPTOK)) section.applyToken(gapTok, [gapProp]);
 
 // --- helpers -------------------------------------------------------------
 const createdList = [];
@@ -79,7 +85,7 @@ function bindTokens(shape, tokenMap) {
   for (const prop in tokenMap) {
     const name = tokenMap[prop];
     const tok = penpotUtils.findTokenByName(name);
-    if (tok) { shape.applyToken(tok, [prop]); boundList.push({ id: shape.id, prop, token: name }); }
+    if (tok) { if (!isBound(shape, prop, name)) shape.applyToken(tok, [prop]); boundList.push({ id: shape.id, prop, token: name }); }
     else proposed.push({ shape: shape.id, prop, wantedToken: name });   // missing token -> propose, never literal
   }
 }
@@ -87,7 +93,10 @@ function bindTokens(shape, tokenMap) {
 let usedComponents = 0;
 
 // --- build nodes in source order -----------------------------------------
-for (const node of NODES) {
+// A section that already existed AND already has children was built by an earlier (possibly failed-but-
+// executed) call: building NODES again would duplicate every child. Skip and report instead.
+const skippedNodes = !created && (section.children || []).length > 0;
+for (const node of (skippedNodes ? [] : NODES)) {
   if (node.kind === "component") {
     const cat = ds.componentsByRole[node.role];
     if (cat) {
@@ -146,6 +155,7 @@ return {
   section: ROLE,
   sectionId: section.id,
   sectionCreated: created,
+  skippedNodes,   // true = the section already had children; nothing was rebuilt (read it before deciding)
   created: createdList,
   bound: boundList,
   proposed,

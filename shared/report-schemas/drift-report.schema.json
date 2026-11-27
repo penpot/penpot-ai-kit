@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://penpot.app/schemas/penpot-ai-kit/drift-report.schema.json",
   "title": "Design-to-code DRIFT report (penpot-design-to-code-review)",
-  "description": "Formalizes the report shape documented in skills/penpot-design-to-code-review/SKILL.md §8.",
+  "description": "Formalizes the report shape documented in skills/penpot-design-to-code-review/SKILL.md (Report section).",
   "type": "object",
   "required": ["runId", "scope", "codeSource", "summary", "drift", "findings", "stateMatrix"],
   "properties": {
