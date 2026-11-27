@@ -46,6 +46,36 @@ message so agents self-correct." They're ordered by impact on agent reliability.
   mirroring observed 2026-08-10) is written up below; Finding 6 is amended (`combineAsVariants` is
   now *listed* on `Board`).
 
+- **Re-verification pass (2026-11-27, Penpot 2.20.0, `PenpotRemotePRE`, wasm renderer, throwaway file
+  created through `penpotMgmt`):**
+  - **Finding 1: FIXED** — a reference token is created while the referenced set is inactive
+    (`resolvedValue` is `null` until the set is activated).
+  - **Finding 2: unchanged** — `addSet({ name })` still returns `active === false`, still undocumented.
+  - **Finding 4: FIXED** — `addToken({ type: "spacing", value: 16 })` is accepted and stored as `"16"`.
+  - **Finding 5: FIXED** — the overview documents `addTheme({ group, name })`.
+  - **Finding 7: changed** — `export_shape("page")` no longer errors but returned a blank thumbnail.
+  - **Finding 8:** padding bindings work; `["all"]` **still throws**
+    (`Field 1 is invalid: should be a set of strings`).
+  - **Finding 9: FIXED** — `await penpot.openPage(page)` updates `currentPage` in the same call, the
+    board lands on the opened page, and cross-page `appendChild` throws
+    `Cannot modify a page that is not currently active`.
+  - **Finding 10: FIXED** — `createVariantContainer`, `setVariantProperty`, `renameProperty`,
+    `instance()` + `switchVariant`, `detach()` on a variant instance, `createComponent` on the detached
+    copy and `remove()` on a variant main board all saved; `File.validate()` returned `[]` throughout
+    and later mutations kept saving.
+  - **Finding 11: FIXED** (still) — `applyToText` wrote `gfont-inter` and kept `fontSize`.
+  - **Finding 12: unchanged** — an `absolute` layout child set to `x = 10` inside a board at x=400
+    reads `parentX = -390`; the overview still says relative.
+  - **Finding 13: FIXED** — a direct property set now clears the binding (`flex.topPadding = 5`,
+    `text.fills = […]`), matching the overview.
+  - **Finding 14: not reproduced** in one attempt at the original recipe.
+  - **Still open, never filed as a numbered finding:** re-applying an already-bound token toggles the
+    binding off; `shape.tokens` is not readable in the same call even after `waitForLayoutUpdate()`;
+    `fonts.findByName` matches by substring.
+  - **NEW Finding 15 (Med-High, needs a clean repro)** — see below.
+  - Also verified: `File.saveVersion(label)`, `File.validate()`, `history.undoBlockBegin/Finish`,
+    token types `sizing` / `number` / `rotation`, `penpotMgmt` (`listProjects`, `createFile`, `file.open`).
+
 Impact legend: **High** = blocks a common agent task with a confusing failure · **Med** = wastes a
 retry / is non-obvious · **Low** = cosmetic or doc-only.
 
@@ -361,6 +391,46 @@ on one subtree root. The kit now runs a `clearFlip()` sweep after every built un
   negative scale, or normalise `flipX` after the reflow.
 - **Docs:** until fixed, note in the overview that `fill` sizing on an undersized board can mirror the
   subtree, and that `flipX` must be checked after fill expansion.
+
+---
+
+## Finding 15 — A failed `execute_code` call may have run (even twice); `waitForLayoutUpdate` can hang after `applyToken`  ·  **Med-High / needs repro**
+
+**Observed** (2026-11-27, Penpot 2.20.0, remote MCP through a proxy).
+1. One `execute_code` call returned a gateway **502** to the client. Reading the file afterwards showed
+   its body had been executed **twice** (two copies of every shape it created). Because re-applying a
+   bound token toggles it off, the second run also *unbound* what the first had bound.
+2. A call that created a flex board, applied five tokens and then awaited
+   `penpot.waitForLayoutUpdate()` failed with `waitForLayoutUpdate timeout` after 30 s — yet all
+   bindings had been applied. A follow-up call (four `applyToken` corners + `waitForLayoutUpdate(8000)`)
+   ended with `The plugin connection closed before the task finished` and the session dropped. In
+   isolation later, `waitForLayoutUpdate` after `applyToken` resolved in ~5 ms.
+
+**Agent impact.** An agent that retries a failed call duplicates shapes and silently strips token
+bindings. The kit now requires a state read before any retry and idempotent steps (gotchas #19).
+
+**Recommendation:**
+- **MCP:** make execution at-most-once per tool call (an idempotency key across proxy retries), and say
+  in the error whether the code ran.
+- **API:** make `applyToken` idempotent (re-applying the same token to the same property is a no-op),
+  with a separate explicit call to unbind.
+- **Docs:** state that `waitForLayoutUpdate` does not cover token application.
+
+---
+
+## Finding 16 — Calling a function kept in `storage` from a later call hangs  ·  **Med / cause not isolated**
+
+**Observed** (2026-11-27, Penpot 2.20.0, remote MCP). The overview says functions can be stored in
+`storage` to build up a library. Three times out of three, a function assigned to `storage` in one
+`execute_code` call and invoked in a later call never returned (`The operation timed out`): twice a
+60-line builder, once `() => ({ n: penpotUtils.getPages().length, page: penpot.currentPage.name })`.
+Calling the same function in the call that defined it worked, and the same body pasted inline in a
+later call returned immediately. Likely mechanism: the closure captures that call's `penpot` /
+`penpotUtils` bindings, which are dead once the call ends. The instance was unstable the same day
+(dropped sessions, export timeouts), so this needs a clean repro.
+
+**Recommendation:** make stale bindings throw a clear error instead of hanging, or document that stored
+functions must take `penpot`/`penpotUtils` as arguments (if that works) — and correct the overview.
 
 ---
 

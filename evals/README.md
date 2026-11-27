@@ -17,7 +17,7 @@ Each `golden/*.eval.json` is:
     "must_not": ["..."]            // guardrails
   },
   "pass_criteria": "human-readable pass bar",
-  "triggers": {                     // optional — description-trigger check (not executed by run-eval yet)
+  "triggers": {                     // optional — description-trigger check, run by trigger-eval.mjs
     "should": ["phrasings that must activate the skill"],
     "should_not": ["phrasings that must NOT activate it"]
   }
@@ -26,8 +26,7 @@ Each `golden/*.eval.json` is:
 
 All four `expected` arrays are optional; use only the ones that fit the target. `fixture` is either
 a prose description or a path under `evals/fixtures/` — `run-eval.mjs` inlines the file when it
-exists. `triggers` records should/should-not phrasings for a future `trigger-eval.mjs` that asks a
-headless agent which skill it would pick; `validate-kit.mjs` accepts the key today, nothing runs it. `must_create`
+exists. `triggers` records should/should-not phrasings; `trigger-eval.mjs` runs them (see below). `must_create`
 asserts on the resulting canvas/library state; `must_do` asserts on the *process* (visible in the
 transcript), which is how checkpoint/approval behavior gets tested.
 
@@ -47,6 +46,20 @@ manual pasting into any other MCP-connected agent.
 3. Run the named skill/workflow with the fixture as input.
 4. Inspect the result with `execute_code` reads (`shapeStructure`, `tokenOverview`) and `export_shape`.
 5. Check each `must_detect` / `must_create` / `must_do` holds and each `must_not` is absent. Record pass/fail.
+
+## Trigger eval (no Penpot needed)
+`npm run eval:triggers` checks the one thing that decides whether a skill runs at all: its
+`description`. It shows a headless model only the catalog (every skill's name + description) and asks
+which single skill it would activate for each `triggers.should` / `should_not` phrasing in the suite.
+A `should` must pick the eval's skill; a `should_not` must pick anything else. For workflow evals the
+target is the pipeline's first skill (the router also passes). Exit code 1 lists the misses; results
+land in `evals/results/triggers.json`. `--print` emits the prompt for any other model and
+`--answers <file>` scores a saved reply; `--model <id>` checks a smaller model, which is where weak
+descriptions show first.
+
+Write phrasings the way a user would say them, not copied from the description, and make every
+`should_not` a near miss that belongs to a sibling skill. When a miss is stable across runs, reword the
+description, not the test. It needs the `claude` CLI and an account, so it is not part of CI.
 
 Treat a PASS as strong signal, not proof — spot-check FAILs by hand before blaming the skill.
 

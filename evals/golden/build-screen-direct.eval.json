@@ -21,5 +21,18 @@
       "a named tell from shared/design-quality.md §7 present in the final screen without being reported"
     ]
   },
-  "pass_criteria": "Section-by-section build with checkpoints; auditScreenQuality.js pass == true; design-quality report belowThreshold == 0 or weak axes explicitly presented; padding bindings reported as bound or mirrored-with-exception."
+  "pass_criteria": "Section-by-section build with checkpoints; auditScreenQuality.js pass == true; design-quality report belowThreshold == 0 or weak axes explicitly presented; padding bindings reported as bound or mirrored-with-exception.",
+  "triggers": {
+    "should": [
+      "design a settings page for a team workspace",
+      "mock up an analytics dashboard in Penpot",
+      "create a landing page for our new product"
+    ],
+    "should_not": [
+      "recreate this React component in Penpot",
+      "make a pitch deck from this outline",
+      "check this screen for contrast issues",
+      "does this landing look AI-generated?"
+    ]
+  }
 }

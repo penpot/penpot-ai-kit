@@ -14,5 +14,17 @@
       "use of hyphenated token types like 'border-radius'"
     ]
   },
-  "pass_criteria": "tokenOverview() shows primitives + semantic; semantic alias resolves to the primitive value; validateTokens.js reports 0 off-grid and 0 unresolved."
+  "pass_criteria": "tokenOverview() shows primitives + semantic; semantic alias resolves to the primitive value; validateTokens.js reports 0 off-grid and 0 unresolved.",
+  "triggers": {
+    "should": [
+      "create a color and spacing token system for this file",
+      "add a dark theme to our tokens",
+      "turn the hardcoded values in this design into tokens"
+    ],
+    "should_not": [
+      "find hardcoded colors",
+      "build a Button with hover and disabled states",
+      "design a pricing page"
+    ]
+  }
 }

@@ -5,10 +5,12 @@
  *   Turn the standalone per-cell components (from createVariants.js) into a single VariantContainer
  *   with named axes and per-component values, then lay the container out.
  *
- * GATE (gotchas #12 / mcp-api-findings Finding 10)
- *   Variant mutation has CORRUPTED live files (backend rejects every later save with an unsurfaced
- *   HTTP 400; ~30 s hangs). This script REFUSES to run unless the user duplicated the file and confirmed
- *   saves work: set `storage.cf.fileDuplicatedConfirmed = true` in a previous execute_code call.
+ * GATE (gotchas #12 / mcp-api-findings Finding 10) — version-aware
+ *   Penpot >= 2.20.0 (probed live 2026-11-27): variant mutation is safe. The script takes a restore
+ *   point with `penpot.currentFile.saveVersion()` and proceeds.
+ *   Older instances: variant mutation CORRUPTED live files on 2.16.x (every later save rejected, ~30 s
+ *   hangs). There the script REFUSES to run unless the user duplicated the file and accepted the risk:
+ *   set `storage.cf.fileDuplicatedConfirmed = true` in a previous execute_code call.
  *
  * PATHS
  *   "helper" — Penpot ≥ 2.17: `penpotUtils.createVariantContainer([{ shape, properties }])` builds the
@@ -18,8 +20,8 @@
  *   `Board.combineAsVariants(ids)` is listed by penpot_api_info on 2.17 but unverified — never used here.
  *
  * USAGE
- *   Paste into execute_code (Phase 3) after createVariants.js. One call. Then verify the file still
- *   saves (trivial UI change) BEFORE any further mutation.
+ *   Paste into execute_code (Phase 3) after createVariants.js. One call (success = saved, gotchas #19).
+ *   In the NEXT call read `penpot.currentFile.validate()` and each component's `variantError`.
  *
  * INPUTS
  *   RECORDS — [{ name: "Button / Size=Medium State=Default", properties: { Size: "Medium", State: "Default" } }]
@@ -41,8 +43,15 @@ const RECORDS = [
 const CONTAINER_NAME = "REPLACE-ME-containerName";
 
 // --- gate ---------------------------------------------------------------------------------------
-if (!(storage.cf && storage.cf.fileDuplicatedConfirmed === true)) {
-  return { halted: true, reason: "Duplicate the file and confirm saves work first (gotchas #12); set storage.cf.fileDuplicatedConfirmed = true to proceed." };
+storage.cf = storage.cf || {};
+const verParts = String(penpot.version || "0").split(".").map(n => parseInt(n, 10) || 0);
+const variantsSafe = verParts[0] > 2 || (verParts[0] === 2 && verParts[1] >= 20);
+let restorePoint = null;
+if (variantsSafe) {
+  try { restorePoint = (await penpot.currentFile.saveVersion("before variants — " + CONTAINER_NAME)).label; }
+  catch (e) { restorePoint = "saveVersion failed: " + String(e && e.message || e); }
+} else if (!(storage.cf && storage.cf.fileDuplicatedConfirmed === true)) {
+  return { halted: true, penpotVersion: penpot.version || null, reason: "Penpot < 2.20: variant mutation corrupted files on 2.16.x (gotchas #12). Duplicate the file and set storage.cf.fileDuplicatedConfirmed = true, or use the standalone-components fallback." };
 }
 
 // --- resolve records -> main instances -------------------------------------------------------------
@@ -122,6 +131,7 @@ if ("wrap" in fl) fl.wrap = "wrap";
 let properties = axes;
 try { properties = (container.variants && container.variants.properties) || axes; } catch (e) { properties = axes; }
 
+storage.cf = storage.cf || {};
 storage.cf.variantContainerId = container.id;
 return {
   containerId: container.id,
@@ -129,5 +139,8 @@ return {
   properties,
   components: out,
   missing,
-  next: "verify the file still saves (make a trivial change in the UI) before continuing"
+  penpotVersion: penpot.version || null,
+  restorePoint,
+  validation: (() => { try { return penpot.currentFile.validate(); } catch (e) { return "validate() unavailable: " + String(e && e.message || e); } })(),
+  next: "in the NEXT call re-read penpot.currentFile.validate() and each component's variantError; non-empty -> stop, report, offer the restore point"
 };

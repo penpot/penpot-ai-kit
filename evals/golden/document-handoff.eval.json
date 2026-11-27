@@ -23,5 +23,16 @@
       "creating a note without a matching pin (orphan note) or leaving gaps/duplicates in numbering"
     ]
   },
-  "pass_criteria": "Phase 5 audit returns violations: [] — design untouched (snapshot match), 3 pin/note pairs with contiguous 1..3 numbering and full parity, accent/surface/type bound to annotation tokens, everything wrapped in one hideable group, 3-column order holds; kit + tokens were created only after explicit approval."
+  "pass_criteria": "Phase 5 audit returns violations: [] — design untouched (snapshot match), 3 pin/note pairs with contiguous 1..3 numbering and full parity, accent/surface/type bound to annotation tokens, everything wrapped in one hideable group, 3-column order holds; kit + tokens were created only after explicit approval.",
+  "triggers": {
+    "should": [
+      "annotate this checkout screen with notes for the developers",
+      "add numbered pins and a context card so engineering can build this"
+    ],
+    "should_not": [
+      "generate a DESIGN.md",
+      "rename the layers before handoff",
+      "run an accessibility audit"
+    ]
+  }
 }

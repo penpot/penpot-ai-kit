@@ -31,6 +31,25 @@ upload, `package_skill.py`) rejects unknown keys. Keep them for now — `scripts
 and `skills.json` depend on them; if a strict target is needed, fold them under `metadata:` in one
 coordinated pass (template, validator, lock, manifests).
 
+## Slim anatomy (pilot — `penpot-router`, `penpot-build-screen`)
+
+The 16-section anatomy below made every SKILL.md restate doctrine that already lives in `shared/`
+(tool table, gotchas in full, modes, naming, a second copy of the anti-rationalization table). Two
+skills now follow a slimmer shape; migrate the rest only after the pilot's evals hold:
+
+1. **Title + role + the one rule** — a short paragraph, pointers to the tool reference and gotchas.
+2. **Brief contract** — Context / Objective / Inputs / Constraints / Acceptance Criteria.
+3. **Workflow** — phases with their scripts, exit criteria and ✋ checkpoints inline (no separate
+   checkpoint table).
+4. **Rules** — numbered; each cites a gotcha number instead of re-explaining it, except the skill's own
+   critical failure mode. Each rule says why, so the model can generalise.
+5. **Mode and state** — mode, ledger keys, naming, in a few lines.
+6. **Supporting files** — references and scripts, then the **Doctrine paths** line (still required).
+
+What moves out of SKILL.md: the anti-rationalization table (→ `references/NN-anti-rationalization.md`),
+helper snippets that duplicate a script, and `penpot_api_info` pointer lists. Rule of thumb: a line
+stays in SKILL.md only if the agent needs it on *every* run of the skill.
+
 ## Body sections (in this exact order)
 
 1. **Title + "How it works"** — one paragraph on the domain. Do NOT re-enumerate the MCP tools

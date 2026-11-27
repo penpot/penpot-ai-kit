@@ -22,5 +22,15 @@
       "writing aesthetic prose without having viewed at least one export"
     ]
   },
-  "pass_criteria": "The generated DESIGN.md passes the format self-check in references/02-designmd-format.md (frontmatter parses, every {ref} resolves, section order exact, Known Gaps present); every value is traceable to the fixture file; the canvas snapshot is unchanged."
+  "pass_criteria": "The generated DESIGN.md passes the format self-check in references/02-designmd-format.md (frontmatter parses, every {ref} resolves, section order exact, Known Gaps present); every value is traceable to the fixture file; the canvas snapshot is unchanged.",
+  "triggers": {
+    "should": [
+      "write a DESIGN.md for this file so our coding agent can follow it",
+      "export this design system as a markdown spec"
+    ],
+    "should_not": [
+      "add notes for developers next to this screen",
+      "audit our tokens"
+    ]
+  }
 }

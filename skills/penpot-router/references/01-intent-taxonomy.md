@@ -3,7 +3,7 @@
 > Loaded during **Phase 1 (Intent classification)** of `penpot-router`. This is the full mapping of
 > what users actually say to the one skill or workflow that should handle it, plus the fallbacks and
 > tie-breakers that keep the router from guessing. The router itself mutates nothing; it picks one
-> target and hands off the Token-Aware Brief Contract (SKILL.md §5).
+> target and hands off the Token-Aware Brief Contract (SKILL.md).
 
 ## How to use this file
 1. Read the user's literal request.
@@ -89,4 +89,4 @@ When a request bundles intents ("set up tokens, build a Button, and check contra
 3. **Non-Penpot request** → this is not a routing case; the router declines and hands back to the
    general assistant.
 4. **Host client already auto-selected a skill** → do not re-dispatch; present this taxonomy as a
-   reference map and step aside (graceful degradation, SKILL.md §1 and Critical Rule 7).
+   reference map and step aside (graceful degradation — see the SKILL.md intro).

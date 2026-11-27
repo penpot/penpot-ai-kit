@@ -26,4 +26,5 @@ From a base (e.g. 16px): `…, 11, 13, 16, 19, 23, 28, 33, 40, 48`. Store as `fo
 ## Token types
 Use the exact strings in `shared/tokens-schema.json`. `color`, `spacing`, `borderRadius`,
 `fontSizes`, `fontWeights`, `fontFamilies`, `letterSpacing`, `dimension`, `opacity`, `shadow`,
-`typography`, `borderWidth`, `textDecoration`, `textCase`.
+`typography`, `borderWidth`, `textDecoration`, `textCase`, plus `sizing` (width/height and layout
+min/max), `number` and `rotation` (verified live on Penpot 2.20.0).

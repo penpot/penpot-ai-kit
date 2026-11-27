@@ -12,7 +12,8 @@
     "validate": "node scripts/dev/validate-kit.mjs",
     "lock": "node scripts/dev/update-lock.mjs",
     "lock:check": "node scripts/dev/update-lock.mjs --check",
-    "test:anti-slop": "node scripts/dev/test-anti-slop.mjs"
+    "test:anti-slop": "node scripts/dev/test-anti-slop.mjs",
+    "eval:triggers": "node scripts/dev/trigger-eval.mjs"
   },
   "files": [
     "AGENTS.md",

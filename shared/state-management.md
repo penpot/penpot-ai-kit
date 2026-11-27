@@ -12,7 +12,8 @@ There are two persistence surfaces. **Prefer these — they always work, includi
 sandboxed clients.**
 
 1. **`storage`** (in-memory across `execute_code` calls in the same session). Cache discovery
-   results, created ids, and reusable helper functions here.
+   results and created ids here — plain data only. Do not rely on helper *functions* kept in `storage`:
+   calling one in a later call hung the tool on 2.20.0 (`plugin-api-gotchas.md` #19); paste helpers inline.
    ```js
    storage.run = storage.run || {};
    storage.run.tokensSetId = set.id;          // remember what you made
@@ -50,6 +51,16 @@ Every create step checks for existence first, by name, so re-running never dupli
 let set = penpot.library.local.tokens.sets.find(s => s.name === "semantic");
 if (!set) set = penpot.library.local.tokens.addSet({ name: "semantic" });
 ```
+
+## Retries and restore points
+- **Read before you retry.** A call that returned an error or timed out may have run — observed live,
+  even twice (`plugin-api-gotchas.md` #19). Idempotent creates (above) cover shapes and sets; token
+  bindings need their own guard, because re-applying a bound token toggles it off:
+  `if (shape.tokens[prop] !== tok.name) shape.applyToken(tok, [prop]);`
+- **Restore point per risky phase.** Before variants, migrations, bulk rebinding or any restructuring:
+  `await penpot.currentFile.saveVersion("<RUN_ID> — before <phase>")`, and record the label in the
+  ledger (`restorePoints: [...]`) so the final report can tell the user what to roll back to.
+- **Integrity read after it.** `penpot.currentFile.validate()` must return `[]`; otherwise stop and report.
 
 ## What goes in the ledger
 `{ runId, phase, created: [{kind, name, id}], decisions: [...], assumptions: [...], pendingReview: [...], selfReview: [...] }`

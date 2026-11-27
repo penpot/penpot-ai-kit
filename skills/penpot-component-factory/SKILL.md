@@ -40,7 +40,7 @@ Full surface: `shared/penpot-mcp-tool-reference.md`. Key calls:
 | `penpot.createBoard()` + `addFlexLayout()` | base component container |
 | `penpot.library.local.createComponent(shapes)` | turn the base into a component |
 | `shape.clone()` | derive variants from the base |
-| `penpotUtils.createVariantContainer([{ shape, properties }])` | preferred (≥ 2.17): container + axes + values in one call — behind the duplicate-file gate |
+| `penpotUtils.createVariantContainer([{ shape, properties }])` | preferred (≥ 2.17): container + axes + values in one call — after the restore-point gate (#12) |
 | `penpot.createVariantFromComponents(mainInstances)` | low-level fallback when the helper is absent |
 | `instance.switchVariant(pos, value)` | demonstrate/switch variants (`pos` = index in `variants.properties`) |
 | `export_shape` | visual checkpoint of the matrix |
@@ -50,9 +50,9 @@ Gotcha numbers refer to `shared/plugin-api-gotchas.md`.
 - Build the base as a **Board** (`createBoard`, NOT `createFrame`) with `addFlexLayout()`; set `dir`, gaps, padding, `horizontalSizing`/`verticalSizing`.
 - **#4 flex/grid overrides child x/y** — order children by append; use `layoutChild` for per-child sizing/margins.
 - `clone()` duplicates a shape with all properties — the basis for the variant matrix.
-- **#9 variant API** — prefer `penpotUtils.createVariantContainer([{ shape: mainInstance, properties: { Size: "Medium", State: "Default" } }])` (≥ 2.17) behind the duplicate-file gate; the low-level `penpot.createVariantFromComponents(mainInstances)` + `renameProperty`/`addProperty`/`setVariantProperty` path only as fallback. Switch with `instance.switchVariant(pos, value)` — `pos` is the index in `variants.properties`, not the axis name. `Board.combineAsVariants(ids)` is listed by `penpot_api_info` on 2.17 but unverified — do not use.
-- **#6 detach** before mutating an instance's internals — and NEVER on a variant instance (see #12).
-- **#12 variant MUTATION corrupts the file — this skill's critical failure mode.** `setVariantProperty(pos, value)` updates the variant properties but not the variant root's internal `:variant-name`, so the file fails backend referential-integrity validation: from then on **every component-touching mutation is rejected with an HTTP 400 the plugin never surfaces** — calls hang ~30 s, the session dies, unflushed mutations roll back. The same poison applies to `addVariant()` + rename, `comp.instance()` + `detach()` on a variant, `createComponent` on a detached variant instance, and `shape.remove()` on a variant board; recovery is manual. *Reading* variants and instancing a specific variant are safe. **Safe strategy:** build each state as a standalone Board and `createComponent([board])` **one at a time**, named `Component / State`; Phase 3 (§6) carries the duplicate-file / verify-saves / fallback procedure.
+- **#9 variant API** — prefer `penpotUtils.createVariantContainer([{ shape: mainInstance, properties: { Size: "Medium", State: "Default" } }])` (≥ 2.17) after the restore-point gate (#12); the low-level `penpot.createVariantFromComponents(mainInstances)` + `renameProperty`/`addProperty`/`setVariantProperty` path only as fallback. Switch with `instance.switchVariant(pos, value)` — `pos` is the index in `variants.properties`, not the axis name. `Board.combineAsVariants(ids)` is listed by `penpot_api_info` on 2.17 but unverified — do not use.
+- **#6 detach** before mutating an instance's internals — on a variant instance only on Penpot ≥ 2.20 (see #12).
+- **#12 variant mutation is version-gated — this skill's critical failure mode.** On **Penpot ≥ 2.20.0** (probed live 2026-11-27) the whole flow is safe: `createVariantContainer`, `setVariantProperty`, `renameProperty`, `switchVariant`, `detach()`/`remove()` on variants all saved cleanly with `penpot.currentFile.validate()` → `[]`. On **2.16.x** the same mutations corrupted the file (stale internal `:variant-name` → every later save rejected, ~30 s hangs, manual recovery); 2.17–2.19 were never probed. So: read `penpot.version` in Phase 0; ≥ 2.20 → real variants behind a `saveVersion` restore point + `validate()` check; older → standalone `Component / State` components unless the user works on a duplicate. Phase 3 (§6) carries the procedure.
 - Verify unfamiliar signatures with `penpot_api_info('VariantContainer')` / `penpot_api_info('Variants')` first.
 
 ## 5. Token-Aware Brief Contract
@@ -79,27 +79,25 @@ Act as a **senior component engineer**.
 **`createComponent` it** — `createVariantFromComponents` needs a component *per* variant. Use
 `scripts/createVariants.js` (collects each cell's main-instance id). ✋ Checkpoint: review the cells.
 
-**Phase 3 — Group, name axes, organize.** ⚠️ **HIGH-RISK PHASE — read `shared/plugin-api-gotchas.md`
-#12 first.** Mutating variant components (`setVariantProperty`, axis renames, detaching/removing
-variants) has **corrupted files and hung all subsequent saves** in live sessions (the backend rejects
-every save with an unsurfaced HTTP 400). Before this phase: ✋ Checkpoint — ask the user to **duplicate
-the file** (or confirm they accept the risk on a scratch file). Then apply **one** variant mutation,
-verify the file still saves (a later read-only call must succeed and persist), and only then continue.
-If any call hangs ~30 s, **stop immediately** and switch to the fallback below.
+**Phase 3 — Group, name axes, organize.** Version-gated (`shared/plugin-api-gotchas.md` #12).
+`scripts/createVariantGroup.js` reads `penpot.version` and:
+- **≥ 2.20.0** — takes a restore point (`await penpot.currentFile.saveVersion("before variants — <RUN_ID>")`),
+  then groups. No file duplication needed.
+- **older** — returns `{ halted: true }` unless `storage.cf.fileDuplicatedConfirmed === true` (set it
+  in a prior call only after the user duplicated the file and accepted the risk); otherwise use the
+  fallback below.
 
-The variant flow: `scripts/createVariantGroup.js` is **gated** — it returns `{ halted: true }` unless
-`storage.cf.fileDuplicatedConfirmed === true` (set it in a prior call only after the user duplicated the
-file and confirmed saves work). It then prefers
-`penpotUtils.createVariantContainer(records.map(r => ({ shape: main, properties: r.properties })))`
-(path `"helper"`, ≥ 2.17: axes + values in one call), falling back to `penpot.createVariantFromComponents`
-+ `renameProperty`/`addProperty`/`setVariantProperty` (path `"legacy"`, kept verbatim in the script).
-Either way it clears the container fill (#11), **gives the container a flex layout** (variants stack at
-the same spot otherwise: `container.flex || container.addFlexLayout()`; row, gaps, padding, `wrap`) and
-returns `{ containerId, path, properties, components, next }`. **Save verification:** after the call,
-make a trivial change in the Penpot UI and confirm it persists before any further mutation — a ~30 s
-hang means the file is poisoned; discard the duplicate and switch to the fallback below. ✋ Checkpoint.
+It prefers `penpotUtils.createVariantContainer(records.map(r => ({ shape: main, properties: r.properties })))`
+(path `"helper"`: axes + values in one call), falling back to `penpot.createVariantFromComponents`
++ `renameProperty`/`addProperty`/`setVariantProperty` (path `"legacy"`). Either way it clears the
+container fill (#11), **gives the container a flex layout** (variants stack at the same spot otherwise:
+`container.flex || container.addFlexLayout()`; row, gaps, padding, `wrap`) and returns
+`{ containerId, path, properties, components, validation, next }`. **Integrity check:** the call only
+returns success once Penpot saved (#19); in the next call read `penpot.currentFile.validate()` and every
+component's `variantError` — anything non-empty means stop, report, and offer the restore point.
+✋ Checkpoint.
 
-**Fallback (always safe):** skip the variant container entirely. Keep the per-cell components from
+**Fallback (instances below 2.20, or when the integrity check fails):** skip the variant container entirely. Keep the per-cell components from
 Phase 2 as standalone components named `Component / Axis=Value, …` (e.g. `Button / Size=Medium,
 State=Hover`), created **one at a time** with a flush pause between calls, arranged in a labeled grid.
 Penpot groups them by the `/` prefix and the user can convert them to real variants in the UI later.
@@ -112,11 +110,11 @@ Penpot groups them by the `/` prefix and the user can convert them to real varia
 3. Variant property/value names: `Property=Value`, PascalCase (`Size=Medium`, `State=Hover`).
 4. Build as a flex Board; never absolute-position children unless `layoutChild.absolute`.
 5. Idempotent: don't duplicate an existing variant.
-6. Detach only when necessary, and report it — **never** detach a variant instance (gotchas #12).
+6. Detach only when necessary, and report it — a variant instance only on Penpot ≥ 2.20 (gotchas #12).
 7. After grouping, give the variant container a flex layout — variants stack at the same position otherwise.
-8. Variant mutation is a known file-corruption risk (gotchas #12): duplicate the file before Phase 3,
-   verify saves after the first mutation, and fall back to standalone `Component / State` components
-   if anything hangs.
+8. Variant mutation is version-gated (gotchas #12): on ≥ 2.20 take a `saveVersion` restore point before
+   Phase 3 and check `validate()` after it; below 2.20 fall back to standalone `Component / State` components
+   unless the user works on a duplicate.
 
 ## 8. Domain Architecture
 Standard axes:
@@ -156,7 +154,7 @@ layers semantic (`label`, `icon`, `button`).
 | "I'll hardcode the hover color." | Breaks theming and governance. | Use/propose a semantic token (`color.action.primary.hover.bg`). |
 | "Absolute-position the icon, it's easier." | Fights flex; breaks resizing. | Use flex order + `layoutChild`; absolute only with `layoutChild.absolute` and a reason. |
 | "I'll assume the variant-creation method/args." | Variant API is easy to get wrong. | Prefer `penpotUtils.createVariantContainer`; low-level `createVariantFromComponents` only when the helper is absent; verify with `penpot_api_info('Variants')`. Never `combineAsVariants` (unverified). |
-| "Variant mutation worked once — I'll batch the rest in one call." | One bad `setVariantProperty` poisons the file silently; every later save hangs (gotchas #12). | One mutation → verify saves persist → continue. On any ~30 s hang, stop and use the standalone-components fallback. |
+| "It's just variants — no need for a restore point or a validate read." | Variant grouping restructures components; on < 2.20 it corrupted files, and on any version a bad combination shows up only in `variantError` / `validate()`. | `saveVersion` before Phase 3; read `validate()` + `variantError` in the next call; below 2.20 use the standalone-components fallback. |
 
 ## 14. Helper Code Snippets
 ```js

@@ -15,5 +15,17 @@
       "detach() without approval"
     ]
   },
-  "pass_criteria": "validateComponent.js returns pass=true (no missing states, no hardcoded, no naming issues)."
+  "pass_criteria": "validateComponent.js returns pass=true (no missing states, no hardcoded, no naming issues).",
+  "triggers": {
+    "should": [
+      "make an Input component with default, focus, error and disabled states",
+      "add a Size axis to our Button",
+      "turn this card into a reusable component with variants"
+    ],
+    "should_not": [
+      "design a login screen",
+      "set up our color tokens",
+      "rename these layers"
+    ]
+  }
 }

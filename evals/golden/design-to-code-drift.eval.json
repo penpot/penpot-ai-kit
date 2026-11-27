@@ -14,5 +14,15 @@
       "inventing a code source or fabricating a comparison side"
     ]
   },
-  "pass_criteria": "Drift report lists each raw-value finding with its matching token name and severity (Minor: not tokenized); summary.designOnly > 0; summary matches + codeOnly = 0; canvas snapshot is unchanged (no shape was written to)."
+  "pass_criteria": "Drift report lists each raw-value finding with its matching token name and severity (Minor: not tokenized); summary.designOnly > 0; summary matches + codeOnly = 0; canvas snapshot is unchanged (no shape was written to).",
+  "triggers": {
+    "should": [
+      "does the Button in our repo match this Penpot component?",
+      "compare this board against its Storybook story and list the differences"
+    ],
+    "should_not": [
+      "turn this React page into a Penpot screen",
+      "audit our token usage"
+    ]
+  }
 }
