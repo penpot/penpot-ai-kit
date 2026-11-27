@@ -8,7 +8,7 @@
 
 ## Method
 1. For each text/icon, get foreground hex and the effective background hex.
-2. Compute relative luminance and contrast ratio (see SKILL.md §14 snippet).
+2. Compute relative luminance and contrast ratio (`lum` / `ratio` in `scripts/checkColorContrast.js`).
 3. Compare to the threshold for that text size/role.
 4. Account for opacity: a token/opacity < 1 changes the effective color — composite over the background.
 
