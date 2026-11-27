@@ -54,11 +54,15 @@ into a file that already has content deserves its own file: offer to create one
 (`penpotMgmt`) rather than writing next to existing work. ✋ Scope and mapping rules.
 
 **Phase 1 — Build the IR.** `scripts/buildIR.js` (`references/02-ir-building.md`). Plain data, no
-Penpot writes. ✋ Review IR coverage.
+Penpot writes: names normalized, Figma types mapped to Penpot token types, every layout number snapped
+to the 4px grid (each snap recorded), and each value matched to a token by exact equality — what has
+no token is listed in `gaps`. ✋ Review coverage, `fidelityNotes` and `gaps`.
 
-**Phase 2 — Tokens.** `scripts/migrateTokens.js` (`references/03-token-migration.md`): Variables →
-tokens with the exact type strings of `shared/tokens-schema.json`; Figma modes → parallel sets /
-themes, following the set layout of `penpot-foundations`. ✋ Review with `tokenOverview()`.
+**Phase 2 — Tokens.** `scripts/migrateTokens.js` (`references/03-token-migration.md`): literals →
+`primitives`, color aliases and anything with a Figma mode → `modes/<mode>`, other aliases →
+`semantic` — the set layout of `penpot-foundations`, creating only the sets that receive a token. An
+existing token with a different value is returned in `conflicts`, never overwritten: resolve each with
+the user. ✋ Review with `tokenOverview()`.
 
 **Phase 3 — Components.** `scripts/migrateComponent.js` (`references/04-component-migration.md`):
 component sets → one component per variant, then a variant container. Take a restore point first
@@ -68,8 +72,11 @@ component sets → one component per variant, then a variant container. Take a r
 one screen at a time with `scripts/migrateScreen.js` (`references/06-screen-migration.md`).
 ✋ Per screen, with its export next to the Figma screenshot.
 
-**Phase 5 — Validate fidelity.** `scripts/validateFidelity.js` (`references/07-validation.md`):
-structure, tokens, visual comparison, `penpot.currentFile.validate()`. Then the fidelity report.
+**Phase 5 — Validate fidelity.** `scripts/validateFidelity.js` (`references/07-validation.md`): token
+type / value / resolution, every variant combination, screen children and real instances, raw values
+left on the canvas, `validate()` — plus everything the IR recorded (snaps, untokenized values,
+unsupported features). `pass` means nothing is missing or wrong; the remaining gaps still go in the
+fidelity report, next to the per-screen exports.
 Problems along the way: `references/08-error-recovery.md`.
 
 ## Rules

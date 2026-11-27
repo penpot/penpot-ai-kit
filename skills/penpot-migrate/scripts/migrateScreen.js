@@ -30,6 +30,7 @@ if (screen && (screen.children || []).length) return { screenId: screen.id, reus
 if (!screen) { screen = penpot.createBoard(); screen.name = IR_SCREEN.name; root.appendChild(screen); }
 if (IR_SCREEN.size) screen.resize(IR_SCREEN.size[0], IR_SCREEN.size[1]);
 if (IR_SCREEN.fill && tok(IR_SCREEN.fill)) { screen.fills = []; bind(screen, IR_SCREEN.fill, ["fill"]); }
+else if (IR_SCREEN.fillLiteral) { screen.fills = [{ fillColor: String(IR_SCREEN.fillLiteral).toUpperCase(), fillOpacity: 1 }]; exceptions.push({ kind: "untokenized-source-value", shape: screen.name, props: ["fill"], literal: IR_SCREEN.fillLiteral }); }
 
 const L = IR_SCREEN.layout || null;
 if (L && L.type === "flex") {
@@ -38,7 +39,10 @@ if (L && L.type === "flex") {
   f.dir = L.dir || "column";
   const gapProp = /^row/.test(f.dir) ? "columnGap" : "rowGap";
   if (T[gapProp] || L[gapProp]) bind(screen, T[gapProp], [gapProp], L[gapProp], v => { f[gapProp] = v; });
-  if (T.padding || L.padding) bind(screen, T.padding, ["paddingTop", "paddingBottom", "paddingLeft", "paddingRight"], L.padding,
+  if (T.paddingY || T.paddingX) {                              // vertical / horizontal pair
+    bind(screen, T.paddingY, ["paddingTop", "paddingBottom"], L.padding, p => { f.topPadding = p[0]; f.bottomPadding = p[2]; });
+    bind(screen, T.paddingX, ["paddingLeft", "paddingRight"], L.padding, p => { f.rightPadding = p[1]; f.leftPadding = p[3]; });
+  } else if (T.padding || L.padding) bind(screen, T.padding, ["paddingTop", "paddingBottom", "paddingLeft", "paddingRight"], L.padding,
     p => { f.topPadding = p[0]; f.rightPadding = p[1]; f.bottomPadding = p[2]; f.leftPadding = p[3]; });
 }
 
@@ -65,6 +69,7 @@ for (const ch of (IR_SCREEN.children || [])) {
   } else if (ch.kind === "text") {
     const t = penpot.createText(ch.text || ""); t.name = ch.name || "p"; screen.appendChild(t); t.growType = "auto-width";
     if (ch.fill) bind(t, ch.fill, ["fill"]);
+    else if (ch.fillLiteral) { t.fills = [{ fillColor: String(ch.fillLiteral).toUpperCase(), fillOpacity: 1 }]; exceptions.push({ kind: "untokenized-source-value", shape: `${screen.name} > ${t.name}`, props: ["fill"], literal: ch.fillLiteral }); }
     placed.push({ text: t.id, name: t.name });
   }
 }

@@ -40,13 +40,19 @@ function buildBoard(node, label, i) {
   const gapVal = L[gapProp];
   if (T[gapProp] || gapVal) bind(b, T[gapProp], [gapProp], gapVal, v => { f[gapProp] = v; });     // gaps and paddings in SEPARATE calls
   const pad = L.padding || null;
-  if (T.padding || pad) bind(b, T.padding, ["paddingTop", "paddingBottom", "paddingLeft", "paddingRight"], pad,
+  if (T.paddingY || T.paddingX) {                              // vertical / horizontal pair
+    bind(b, T.paddingY, ["paddingTop", "paddingBottom"], pad, p => { f.topPadding = p[0]; f.bottomPadding = p[2]; });
+    bind(b, T.paddingX, ["paddingLeft", "paddingRight"], pad, p => { f.rightPadding = p[1]; f.leftPadding = p[3]; });
+  } else if (T.padding || pad) bind(b, T.padding, ["paddingTop", "paddingBottom", "paddingLeft", "paddingRight"], pad,
     p => { f.topPadding = p[0]; f.rightPadding = p[1]; f.bottomPadding = p[2]; f.leftPadding = p[3]; });
   if (node.fill) bind(b, node.fill, ["fill"]);
+  else if (node.fillLiteral) { b.fills = [{ fillColor: String(node.fillLiteral).toUpperCase(), fillOpacity: 1 }]; exceptions.push({ kind: "untokenized-source-value", shape: label, props: ["fill"], literal: node.fillLiteral }); }
   if (node.radius) bind(b, node.radius, ["borderRadiusTopLeft", "borderRadiusTopRight", "borderRadiusBottomRight", "borderRadiusBottomLeft"]);
+  else if (node.radiusLiteral) { b.borderRadius = node.radiusLiteral; exceptions.push({ kind: "untokenized-source-value", shape: label, props: ["borderRadius"], literal: node.radiusLiteral }); }
   for (const ch of (node.children || [])) if (ch.kind === "text") {
     const t = penpot.createText(ch.text || ""); t.name = ch.name || "label"; b.appendChild(t); t.growType = "auto-width";
     if (ch.fill) bind(t, ch.fill, ["fill"]);
+    else if (ch.fillLiteral) { t.fills = [{ fillColor: String(ch.fillLiteral).toUpperCase(), fillOpacity: 1 }]; exceptions.push({ kind: "untokenized-source-value", shape: `${label} > ${t.name}`, props: ["fill"], literal: ch.fillLiteral }); }
   }
   b.setSharedPluginData(NS, CELL_KEY, label);
   return b;
