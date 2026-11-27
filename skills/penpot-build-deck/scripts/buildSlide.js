@@ -42,7 +42,11 @@ const W = 1920, H = 1080, MARGIN = 96, COL = 100, GUTTER = 48;
 const span = (n) => n * COL + (n - 1) * GUTTER;          // 4 → 544, 6 → 840, 8 → 1136
 const tok = (n) => penpotUtils.findTokenByName(n);
 const exceptions = [];
-const bind = (shape, tokenName, props, fallback) => {
+// One muted grey cannot pass contrast on both tones (#8A93A6 is 6.1:1 on the dark bg and 2.9:1 on the
+// light one), so muted text resolves to the tone-specific token when the deck system has it.
+const forTone = (name) => (name === "deck.text.muted" && tok(`deck.text.muted-on-${TONE}`)) ? `deck.text.muted-on-${TONE}` : name;
+const bind = (shape, rawTokenName, props, fallback) => {
+  const tokenName = forTone(rawTokenName);
   const t = tok(tokenName);
   // apply only what is not already bound: a re-applied token toggles its binding OFF (gotchas #2)
   if (t) { try { const todo = props.filter(p => !(shape.tokens && shape.tokens[p] === t.name)); if (todo.length) shape.applyToken(t, todo); return true; } catch (e) { exceptions.push({ kind: "bind-failed", token: tokenName, props, error: String(e) }); } }
@@ -71,9 +75,13 @@ const text = (str, role, { weight = 400, color = textColorToken, width = null, a
   if (sizeTok) { try { t.applyToken(sizeTok, ["fontSize"]); } catch {} }
   return t;
 };
-const box = (name, parent, { dir = "column", gap = 24, align = "start", justify = "start", w = null, h = null, hSizing = "fix", vSizing = "auto", surface = null } = {}) => {
+const box = (name, parent, { dir = "column", gap = 24, align = "start", justify = "start", w = null, h = null, hSizing = null, vSizing = "auto", surface = null } = {}) => {
   const b = penpot.createBoard();
   b.name = name;
+  // A box with no width used to stay at Penpot's default 100px with clipping on, which cut its content
+  // off (seen on a cover header). No width -> hug the content; inner boxes never clip (the slide does).
+  if (hSizing == null) hSizing = w ? "fix" : "auto";
+  if ("clipContent" in b) b.clipContent = false;
   if (w || h) b.resize(w || 100, h || 100);
   const f = b.addFlexLayout();
   f.dir = dir; f[dir.startsWith("row") ? "columnGap" : "rowGap"] = gap; f.alignItems = align; f.justifyContent = justify;

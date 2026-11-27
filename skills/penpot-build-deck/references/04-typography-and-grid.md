@@ -94,7 +94,7 @@ h1.align = "left";
 |---|---|---|
 | ≥ 24 px, or ≥ 18.67 px at weight ≥ 700 | ≥ 3:1 | all titles, body, stats |
 | < 24 px regular | ≥ 4.5:1 | captions, sources, eyebrows at 20–22 |
-| Muted text (`deck.text.muted`) | must still meet the row above | 60 % alpha on `#F2F2F2` over `#121214` ≈ 6.9:1 — passes; 40 % does not |
+| Muted text (`deck.text.muted-on-dark` / `-on-light` — one grey cannot pass on both tones; `buildSlide.js` picks by tone) | must still meet the row above | 60 % alpha on `#F2F2F2` over `#121214` ≈ 6.9:1 — passes; 40 % does not |
 | Text on image / glass | measured against the overlay or blurred surface, worst case | overlay ≥ 55 % dark for on-dark text |
 
 Measured by `penpot-audit-accessibility` with `scope:deck` (same thresholds, no target-size

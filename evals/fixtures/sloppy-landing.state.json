@@ -7,7 +7,7 @@
       "children": [
         { "type": "board", "name": "pill-badge", "size": "200x32", "radius": 16, "text": "New ✨ AI-powered", "position": "directly above the headline" },
         { "type": "text", "name": "h1", "text": "Unlock the future of work", "fontSize": 64, "align": "center", "font": "Inter, with the word 'future' in Instrument Serif italic" },
-        { "type": "text", "name": "p", "text": "Supercharge your team — seamless, effortless — it's not just a tool, it's a revolution.", "align": "center" },
+        { "type": "text", "name": "p", "text": "Supercharge your team — seamless, effortless — it's not just a tool — it's a revolution.", "align": "center" },
         { "type": "board", "name": "button-primary", "text": "Get started", "position": "centered" },
         { "type": "ellipse", "name": "glow", "size": "400x400", "layerBlur": 120, "fill": "#A855F7 @ 40%" }
       ] },
