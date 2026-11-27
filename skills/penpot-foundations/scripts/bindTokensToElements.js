@@ -35,17 +35,22 @@
  * --- APPLY PASS (run repeatedly, ~30/chunk) ---
  *   const RAD = ["borderRadiusTopLeft","borderRadiusTopRight","borderRadiusBottomRight","borderRadiusBottomLeft"];
  *   const b = storage.bind, STEP = 30, slice = b.targets.slice(b.cursor, b.cursor + STEP);
+ *   // GUARD every apply: re-applying a token that is already bound toggles it OFF (gotchas #2), and a
+ *   // chunk can run twice when a call fails after executing (gotchas #19).
+ *   const bind = (s, name, props) => { const t = penpotUtils.findTokenByName(name); if (!t) return;
+ *     const todo = props.filter(p => !(s.tokens && s.tokens[p] === name)); if (todo.length) s.applyToken(t, todo); };
  *   for (const e of slice) { const s = penpotUtils.findShapeById(e.id); if (!s) continue;
- *     if (e.fill)   { const t = penpotUtils.findTokenByName(e.fill);   if (t) s.applyToken(t, ["fill"]); }
- *     if (e.stroke) { const t = penpotUtils.findTokenByName(e.stroke); if (t) s.applyToken(t, ["strokeColor"]); }
- *     if (e.rad)    { const t = penpotUtils.findTokenByName(e.rad);    if (t) s.applyToken(t, RAD); }
+ *     if (e.fill)   bind(s, e.fill, ["fill"]);
+ *     if (e.stroke) bind(s, e.stroke, ["strokeColor"]);
+ *     if (e.rad)    bind(s, e.rad, RAD);
  *   }
  *   b.cursor += slice.length;
  *   return { cursor: b.cursor, total: b.targets.length, remaining: b.targets.length - b.cursor };
  *
  * --- VERIFY/RETRY PASS (between/after chunks) ---
  *   Re-read shape.tokens for the chunk just applied; for any property whose binding != intended (or is
- *   null — common on Text/Rectangle fills), applyToken again. Repeat until stable.
+ *   null), apply again WITH THE SAME GUARD — never re-apply a property that already reads as intended.
+ *   Repeat until stable.
  *
  * CAVEATS (tell the user):
  *  - Value-only matching is a heuristic. Inverse-colored chrome (e.g. a dark surface whose value

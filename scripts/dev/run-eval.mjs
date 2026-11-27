@@ -17,6 +17,7 @@
  *   node scripts/dev/run-eval.mjs evals/golden/foundations-basic.eval.json          # run via claude -p
  *   node scripts/dev/run-eval.mjs evals/golden/foundations-basic.eval.json --print  # just print the prompt
  *   node scripts/dev/run-eval.mjs evals/golden/<id>.eval.json --server <mcp-server-name>   # pin the instance + pre-approve its tools
+ *   … --allow-write   # skills that deliver a local file (penpot-design-md): pre-approve Write, pin the path to evals/results/<id>/
  */
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -39,6 +40,13 @@ if (!evalPath || !existsSync(evalPath)) {
   process.exit(1);
 }
 const spec = JSON.parse(readFileSync(evalPath, "utf8"));
+// --allow-write: for skills whose deliverable is a local file (penpot-design-md). Pre-approves the Write
+// tool and pins the output directory, so the run cannot scatter files around the repo.
+const allowWrite = process.argv.includes("--allow-write");
+const outDirRel = `evals/results/${spec.id}`;
+const writeLine = allowWrite
+  ? `## 0b. Output files\nThis skill writes a local file. The operator has approved the output path: write it under \`${outDirRel}/\` (relative to the current directory) and nowhere else.\n\n`
+  : "";
 const target = spec.skill ? `skill \`${spec.skill}\`` : `workflow \`${spec.workflow}\``;
 
 // A fixture may be a prose description or a path under evals/fixtures/ — inline the file when it exists.
@@ -78,7 +86,7 @@ const prompt = `You are running a GOLDEN EVAL of the Penpot AI Kit against a liv
 rules (AGENTS.md) throughout — checkpoints included; for this eval, self-approve each checkpoint
 AFTER writing down what you would have shown the user (that record is part of the verdict).
 
-${serverLine}## 1. Fixture (set up first, via execute_code, on the CURRENT page)
+${serverLine}${writeLine}## 1. Fixture (set up first, via execute_code, on the CURRENT page)
 ${fixtureText}
 
 If the fixture describes canvas state, build it exactly (idempotently, prefixing every shape name
@@ -119,7 +127,8 @@ catch {
 }
 process.stderr.write(`Running eval '${spec.id}' headlessly (this uses your Claude Code session + the Penpot MCP; keep the plugin window open)...\n`);
 const cliArgs = ["-p", prompt, "--output-format", "text"];
-if (server) cliArgs.push("--allowedTools", `mcp__${server}`, "Skill", "Read", "Glob", "Grep");
+if (server) cliArgs.push("--allowedTools", `mcp__${server}`, "Skill", "Read", "Glob", "Grep", ...(allowWrite ? ["Write"] : []));
+if (allowWrite) mkdirSync(join(ROOT, outDirRel), { recursive: true });
 const r = spawnSync("claude", cliArgs, { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
 if (r.status !== 0) {
   process.stderr.write(`claude -p failed (${r.status}): ${r.stderr?.slice(0, 500)}\n`);

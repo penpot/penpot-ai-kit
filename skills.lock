@@ -1,6 +1,6 @@
 {
   "lockfileVersion": 2,
-  "integrity": "sha256-16:f38b077faf14c6f7",
+  "integrity": "sha256-16:a1e73892bb8c19c7",
   "note": "Per-skill hash = sha256 (16 hex) over every file in the skill dir; doctrine = shared/ + policies/ (vendored into native bundles). Regenerate with scripts/dev/update-lock.mjs; verify with --check.",
   "doctrine": {
     "shared": "sha256-16:17e7f4b2e5760d8f",
@@ -13,11 +13,11 @@
     },
     "penpot-foundations": {
       "version": "0.2.1",
-      "hash": "sha256-16:1d6bdda7740dfc3b"
+      "hash": "sha256-16:c849b6b53b7660f0"
     },
     "penpot-component-factory": {
       "version": "0.3.0",
-      "hash": "sha256-16:bc1cf57f3bbffbca"
+      "hash": "sha256-16:25595896c9e3d1cd"
     },
     "penpot-build-screen": {
       "version": "0.5.0",
@@ -61,7 +61,7 @@
     },
     "penpot-design-md": {
       "version": "0.2.1",
-      "hash": "sha256-16:0d4ed4ac4a8c9aa9"
+      "hash": "sha256-16:af19fadc551bb7d2"
     }
   }
 }

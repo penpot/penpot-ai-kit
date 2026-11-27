@@ -40,7 +40,9 @@ for (const v of MATRIX) {
   // generated main instance (token apply is async and is snapshotted at component-creation time).
   const main = comp.mainInstance();
   const tok = penpotUtils.findTokenByName(v.bg);
-  if (tok) main.applyToken(tok, ["fill"]);     // async; verify in a later call (createVariantGroup/validateComponent)
+  // The clone inherits the base's fill binding: when this cell uses the SAME token (the Default state),
+  // re-applying it would toggle the binding OFF (gotchas #2) — apply only when it differs.
+  if (tok && !(main.tokens && main.tokens.fill === v.bg)) main.applyToken(tok, ["fill"]);   // async; verify in a later call
   const rec = { props: v.props, mainId: main.id, label, bg: v.bg };
   storage.cf.variants.push(rec);
   created.push(rec);
