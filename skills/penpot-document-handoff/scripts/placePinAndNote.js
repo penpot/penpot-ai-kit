@@ -110,6 +110,18 @@ if (!note) {
   const setByName = (re, val) => { const t = penpotUtils.findShape(s => s.type === "text" && re.test(s.name), note); if (t) t.characters = val; };
   const texts = penpotUtils.findShapes(s => s.type === "text", note);
   const badgeNum = texts.find(t => /^\d+$/.test((t.characters || "").trim())); if (badgeNum) badgeNum.characters = String(PIN.n);
+  // Fill title / observation / recommendation. Kits differ in how they name layers, so try the text's
+  // own name first, then the block board it sits in (the body is the LAST text of its block).
+  const inBlock = (re) => { const b = penpotUtils.findShape(s => s.type === "board" && re.test(s.name || ""), note);
+    if (!b) return null; const ts = penpotUtils.findShapes(s => s.type === "text", b).filter(t => t !== badgeNum); return ts[ts.length - 1] || null; };
+  const fill = (key, re, val) => {
+    if (val == null || val === "") return;
+    const t = penpotUtils.findShape(s => s.type === "text" && s !== badgeNum && re.test(s.name || ""), note) || inBlock(re);
+    if (t) t.characters = String(val); else exceptions.push({ kind: "note-text-not-filled", field: key, why: "no text or block layer matching " + re });
+  };
+  fill("title", /title|header/i, PIN.title);
+  fill("observation", /observ/i, PIN.observation);
+  fill("recommendation", /recommend/i, PIN.recommendation);
   penpot.currentPage.root.appendChild(note);
 }
 

@@ -130,9 +130,14 @@ const chromeTok = ["spacing.16", "spacing.inset.md", "spacing.24"].map(n => penp
 const CHROME_PROPS = ["columnGap", "rowGap", "paddingTop", "paddingBottom", "paddingLeft", "paddingRight"];
 let containerSpacing;
 if (chromeTok) {
-  const todo = CHROME_PROPS.filter(p => !(container.tokens && container.tokens[p] === chromeTok.name));
-  if (todo.length) container.applyToken(chromeTok, todo);
-  containerSpacing = { token: chromeTok.name };
+  // Gaps and paddings are bound in SEPARATE calls: one applyToken mixing both kinds recorded the padding
+  // bindings but left the paddings at 0 (seen twice on 2.20 — gotchas #2).
+  const unbound = p => !(container.tokens && container.tokens[p] === chromeTok.name);
+  const gaps = CHROME_PROPS.filter(p => /Gap$/.test(p)).filter(unbound);
+  const pads = CHROME_PROPS.filter(p => /^padding/.test(p)).filter(unbound);
+  if (gaps.length) container.applyToken(chromeTok, gaps);
+  if (pads.length) container.applyToken(chromeTok, pads);
+  containerSpacing = { token: chromeTok.name, check: "next call: flex paddings must equal the token's value, not 0" };
 } else {
   fl.columnGap = 16; fl.rowGap = 16; fl.topPadding = fl.bottomPadding = 16; fl.leftPadding = fl.rightPadding = 16;
   containerSpacing = { literal: 16, note: "no spacing token found — propose one" };

@@ -59,8 +59,10 @@ drawing.
 **Phase 2 — Annotation kit.** Kit components and `annotation.*` tokens exist → reuse them. Otherwise
 **propose** the minimal kit (Critique Card, Chip Note, Pointer S/L, Tooltip) and its tokens
 (`color.annotation.accent | surface | on-accent | body`, `font.annotation.title | body | label`) per
-`references/04-component-and-tokens.md`, and create it only after approval
-(`scripts/setupAnnotationKit.js`). ✋ Approve kit and token names, values and tier.
+`references/04-component-and-tokens.md`, and create it only after approval:
+`scripts/setupAnnotationKit.js` creates the tokens and the Pointer components; Chip Note, Critique Card
+and Tooltip are then built from the reference, one component per call. ✋ Approve kit and token names,
+values and tier.
 
 **Phase 3 — Context card.** `scripts/buildContextCard.js`: instance the Critique Card, fill it from the
 brief, place it to the **left** of the design (`references/03-layout-placement.md`). ✋ Export the card.
@@ -98,7 +100,9 @@ Anatomy and reference values: `references/01-annotation-anatomy.md`.
 5. **Fill policy (#11) — this skill's most common visual bug.** Every new Board is born opaque white.
    Note cards, the context card and tooltips are surfaces → bind `color.annotation.surface`; inner
    section boards and wrappers are structural → `fills = []`.
-6. **Cards are flex Boards** (`column-reverse`, like the reference system). Pins and the context card
+6. **Cards are flex Boards**, never absolute-positioned text or plain Groups (the reference system's
+   cards use `column-reverse`; the scripts' fallback cards use a plain `column` — match whichever kit
+   the file has). Pins and the context card
    are placed at absolute page positions; an `absolute` layout child uses **page** coordinates and
    boards clip at their edges (#14).
 7. **Text.** Set `growType` after any `resize()` (#3) and read `textBounds` in a later call. Resolve
@@ -132,7 +136,7 @@ kebab-case (`context-card`, `note-card`, `pin`); pin labels are the integer inde
 - **references/** — `01-annotation-anatomy.md`, `02-handoff-brief.md`, `03-layout-placement.md`,
   `04-component-and-tokens.md`, `05-anti-rationalization.md`, `06-error-recovery.md`.
 - **scripts/** (paste into `execute_code`) — `setupAnnotationKit.js` (inventory; creates the kit when
-  not `dryRun`), `buildContextCard.js`, `placePinAndNote.js` (one pin + note), `addTooltipCallout.js`,
+  not `dryRun`), `buildContextCard.js`, `placePinAndNote.js` (one pin + note; `exceptions` lists any note field it could not fill), `addTooltipCallout.js`,
   `finalizeHandoff.js` (group + audit).
 
 **Doctrine paths.** `shared/…` and `policies/…` resolve inside this bundle in native installs (vendored by the installer); in a Claude Code plugin install they live at the plugin root — `${CLAUDE_PLUGIN_ROOT}/shared/…`, two directories up from this file.

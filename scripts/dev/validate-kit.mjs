@@ -12,7 +12,7 @@
  *   - eval JSONs with unknown keys or references to nonexistent skills/workflows
  *   - dangling `penpot-*` name mentions in any shipped .md (skills that don't exist)
  *   - prompts/*.md without slash-command frontmatter; plugin.json / marketplace.json version drift
- *   - SKILL.md files missing the §16 "Doctrine paths" line, or with over-long descriptions
+ *   - SKILL.md files missing the "Doctrine paths" line, or with over-long descriptions
  *   - anti-slop lists.json version drift vs. the copies embedded in penpot-anti-slop scripts
  *
  * Usage:  node scripts/dev/validate-kit.mjs        exit 0 = clean, 1 = problems (listed)
@@ -89,7 +89,7 @@ for (const name of skillDirs) {
     if (!existsSync(join(ROOT, req))) bad(rel, `requires '${req}' does not exist`);
   }
   if (fm.description && fm.description.length > 1024) bad(rel, `description is ${fm.description.length} chars (spec cap 1024)`);
-  if (!readFileSync(join(ROOT, rel), "utf8").includes("**Doctrine paths.**")) bad(rel, "missing the §16 'Doctrine paths' line (shared/SKILL-template.md)");
+  if (!readFileSync(join(ROOT, rel), "utf8").includes("**Doctrine paths.**")) bad(rel, "missing the 'Doctrine paths' line (shared/SKILL-template.md)");
   const entry = manifestSkills.get(name);
   if (entry) {
     if (entry.version !== fm.version) bad(rel, `version ${fm.version} != skills.json ${entry.version}`);

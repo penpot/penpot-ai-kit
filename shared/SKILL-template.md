@@ -1,6 +1,6 @@
 # Canonical SKILL.md Anatomy
 
-> The contract every skill in `skills/` follows. Copy this structure. Authors: fill every section; do not reorder. Frontmatter fields are exact.
+> The contract every skill in `skills/` follows. Copy this structure. Frontmatter fields are exact.
 
 ## Frontmatter (YAML)
 ```yaml
@@ -31,51 +31,44 @@ upload, `package_skill.py`) rejects unknown keys. Keep them for now — `scripts
 and `skills.json` depend on them; if a strict target is needed, fold them under `metadata:` in one
 coordinated pass (template, validator, lock, manifests).
 
-## Slim anatomy (pilot — `penpot-router`, `penpot-build-screen`)
+## Body sections
 
-The 16-section anatomy below made every SKILL.md restate doctrine that already lives in `shared/`
-(tool table, gotchas in full, modes, naming, a second copy of the anti-rationalization table). Two
-skills now follow a slimmer shape; migrate the rest only after the pilot's evals hold:
+Every SKILL.md follows this shape. A line belongs in SKILL.md only if the agent needs it on *every*
+run of the skill; everything else lives in `references/` and is loaded when its phase runs.
 
-1. **Title + role + the one rule** — a short paragraph, pointers to the tool reference and gotchas.
-2. **Brief contract** — Context / Objective / Inputs / Constraints / Acceptance Criteria.
-3. **Workflow** — phases with their scripts, exit criteria and ✋ checkpoints inline (no separate
-   checkpoint table).
-4. **Rules** — numbered; each cites a gotcha number instead of re-explaining it, except the skill's own
-   critical failure mode. Each rule says why, so the model can generalise.
-5. **Mode and state** — mode, ledger keys, naming, in a few lines.
-6. **Supporting files** — references and scripts, then the **Doctrine paths** line (still required).
+1. **Title + role + the one rule.** What the skill does, the senior role to act as, and the single
+   non-negotiable for this domain — with the reason for it. Then two pointers: the tool surface
+   (`shared/penpot-mcp-tool-reference.md`) and the API traps (`shared/plugin-api-gotchas.md`). Do not
+   re-enumerate the MCP tools or restate doctrine that lives in `shared/`.
+2. **Brief contract.** Context / Objective (single) / Inputs / Constraints / Acceptance Criteria
+   (quantitative: contrast ratios, grid, coverage, completeness).
+3. **Workflow.** Phases, each with its script, its reference, and its ✋ checkpoint inline (no separate
+   checkpoint table). Phase 0 is read-only discovery (`high_level_overview`, then structure / token
+   reads). Skills that show visual work open the section with the visual self-review line.
+4. **Rules.** Numbered and testable. Each cites a gotcha number (`#2`) instead of re-explaining it —
+   except the skill's own critical failure mode, which is spelled out — and each says *why*, so the
+   model can generalise to cases the rule did not list.
+5. **Mode and state.** The mode and its safe set (`shared/modes-and-policies.md`), the ledger keys
+   (`shared/state-management.md`), naming specifics, and report shape if the skill emits one.
+6. **Supporting files.** `references/` and `scripts/`, then the standard **Doctrine paths** line:
+   "`shared/…` and `policies/…` resolve inside this bundle in native installs (vendored by the
+   installer); in a Claude Code plugin install they live at the plugin root —
+   `${CLAUDE_PLUGIN_ROOT}/shared/…`, two directories up from this file." (`validate-kit.mjs` checks it.)
 
-What moves out of SKILL.md: the anti-rationalization table (→ `references/NN-anti-rationalization.md`),
-helper snippets that duplicate a script, and `penpot_api_info` pointer lists. Rule of thumb: a line
-stays in SKILL.md only if the agent needs it on *every* run of the skill.
+What does **not** go in SKILL.md: the anti-rationalization table (→ `references/NN-anti-rationalization.md`,
+pointed to from the Rules section), helper snippets that duplicate a script, and lists of
+`penpot_api_info` pointers. Target 90–160 lines.
 
-## Body sections (in this exact order)
-
-1. **Title + "How it works"** — one paragraph on the domain. Do NOT re-enumerate the MCP tools
-   (that's `shared/penpot-mcp-tool-reference.md`'s job); one sentence suffices: "every mutation goes
-   through `execute_code`; validate visually with `export_shape`; read structure with
-   `penpotUtils.shapeStructure` (full tool surface: `shared/penpot-mcp-tool-reference.md`)."
-2. **The One Rule That Matters Most** — the single non-negotiable for this domain (usually: never one-shot; smallest useful unit; checkpoint between steps).
-3. **Penpot MCP Tool Reference** — one pointer line to `shared/penpot-mcp-tool-reference.md`, then ONLY the domain-specific calls this skill leans on. Never restate the generic tool table.
-4. **Plugin API Essentials** — the gotchas that bite here as one-liners citing their number in `shared/plugin-api-gotchas.md` (e.g. "#2 async token application"). Explain a gotcha in full ONLY if it is this skill's critical failure mode (e.g. #12 for component-factory). Tell the author to verify unfamiliar signatures with `penpot_api_info`.
-5. **Token-Aware Brief Contract** — the structured brief this skill expects before mutating: **Context** (product, audience), **Objective** (single, specific), **Inputs** (frames/tokens/refs), **Constraints** (forbidden components, inviolable rules), **Acceptance Criteria** (quantitative: contrast ratios, grid, variant completeness). Assign a high-specialization role ("act as a senior design-systems engineer who never hardcodes values").
-6. **Mandatory Workflow** — phases. **Phase 0 = discovery, read-only** (`high_level_overview` then `penpotUtils.shapeStructure`/`tokenOverview`). Then Phase 1..N, each with: goal, the exact `execute_code` steps, an exit criterion, and a ✋ user checkpoint.
-7. **Critical Rules** — numbered, deterministic, testable.
-8. **Domain Architecture** — the structure this skill produces/inspects (token tiers, variant axis matrix, IR shape, report schema).
-9. **Modes & Policies** — what this skill does in suggest/review/autofix; restate the safe-set items it may auto-apply (link `shared/modes-and-policies.md`).
-10. **State Management** — the `RUN_ID` ledger keys it writes; resume behavior (link `shared/state-management.md`).
-11. **User Checkpoints** — a table: *After phase* | *Artifacts shown* | *What we ask*.
-12. **Naming Conventions** — link `shared/naming-conventions.md` + any domain specifics.
-13. **Anti-Rationalization Table** — columns: *Excuse the LLM makes* | *Why it's wrong* | *Deterministic countermeasure that halts the flow*. At least 3 rows, domain-specific (e.g. "I'll add a temp style to move fast" → "temp styles become orphans" → "Stop. Use an approved semantic token or propose one for review.").
-14. **Helper Code Snippets** — short, real, `execute_code`-ready JS using the actual API.
-15. **Reference Resources** — `penpot_api_info` pointers, external doc links.
-16. **Supporting Files** — tables indexing `references/` (progressive-disclosure deep dives) and `scripts/` (paste-into-`execute_code` templates). End the section with the standard **Doctrine paths** line: "`shared/…` and `policies/…` resolve inside this bundle in native installs (vendored by the installer); in a Claude Code plugin install they live at the plugin root — `${CLAUDE_PLUGIN_ROOT}/shared/…`, two directories up from this file." (`validate-kit.mjs` checks it exists.)
+This replaced an earlier 16-section anatomy (0.5.x) that made every SKILL.md restate shared doctrine.
+All fourteen skills were migrated and each migration was checked with its golden eval.
 
 ## Scripts convention (`scripts/*.js`)
 - Header comment: purpose, usage ("paste into an `execute_code` call"), inputs, output.
 - `REPLACE-ME` / `RUN_ID_HERE` placeholders for caller-supplied values.
 - A note to verify any unfamiliar API with `penpot_api_info`.
+- **Safe to run twice.** A failed call may already have run (`plugin-api-gotchas.md` #19): find by name before creating, and guard every `applyToken` (`shape.tokens[prop] !== tok.name`) — a re-applied token loses its binding. Bind gaps and paddings in separate calls.
+- **Tokens, not literals.** Spacing, color and radius are bound to tokens; a missing token falls back to a number that is reported in `exceptions`, never hidden.
+- Keep data, not functions, in `storage`.
 - End with `return { ...structured result... }`. Idempotency check before any create.
 - No `console.log` of returned values.
 
